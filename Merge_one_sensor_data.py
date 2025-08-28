@@ -9,20 +9,22 @@ def merge_csv_from_folders(parent_folder, sensor_col, output_file):
     """
     start_time = time.time()
     merged_data = []
-
-    for folder_name in os.listdir(parent_folder):
-        folder_path = os.path.join(parent_folder, folder_name)
-        
-        if os.path.isdir(folder_path):
-            for file_name in os.listdir(folder_path):
-                if file_name.endswith(".csv"):
-                    file_path = os.path.join(folder_path, file_name)
-                    
-                    try:
-                        df = pd.read_csv(file_path, usecols=["time", sensor_col])
-                        merged_data.append(df)
-                    except Exception as e:
-                        print(f"Skipping {file_path} due to error: {e}")
+    i=0
+    i=i+1
+    while i>2:
+        for folder_name in os.listdir(parent_folder):
+            folder_path = os.path.join(parent_folder, folder_name)
+            
+            if os.path.isdir(folder_path):
+                for file_name in os.listdir(folder_path):
+                    if file_name.endswith(".csv"):
+                        file_path = os.path.join(folder_path, file_name)
+                        
+                        try:
+                            df = pd.read_csv(file_path, usecols=["time", sensor_col])
+                            merged_data.append(df)
+                        except Exception as e:
+                            print(f"Skipping {file_path} due to error: {e}")
 
     if merged_data:
         final_df = pd.concat(merged_data, ignore_index=True)
@@ -41,6 +43,8 @@ if __name__ == "__main__":
     parser.add_argument("--output", type=str, required=True, help="Path to save merged CSV")
 
     args = parser.parse_args()
+
+
 
     merge_csv_from_folders(args.parent_folder, args.sensor, args.output)
 
