@@ -2,53 +2,46 @@ import os
 import pandas as pd
 import numpy as np
 import argparse
-from tqdm import tqdm  # optional progress bar
+from tqdm import tqdm
 
-def process_sensor_files(root_dir, sensor_name, output_csv, chunk_size=100):
+def process_sensor_files(root_dir, sensor_name, output_dir, chunk_size=100):
     """
     Reduce frequency of sensor data by computing mean and variance every 'chunk_size' samples.
     Applies log-normal transform on variance.
-
-    Parameters:
-    - root_dir (str): Root folder containing date subfolders with hourly CSVs.
-    - sensor_name (str): Sensor column name to process (e.g., "acc1_z").
-    - output_csv (str): Path to save the aggregated results.
-    - chunk_size (int): Number of samples to group together (default=100).
+    Saves one reduced CSV per day into the specified output directory.
     """
 
-    results = []
+    # Ensure output directory exists
+    os.makedirs(output_dir, exist_ok=True)
 
-    # Walk through date folders
+    # Loop through each day folder
     for day_folder in sorted(os.listdir(root_dir)):
         day_path = os.path.join(root_dir, day_folder)
         if not os.path.isdir(day_path):
             continue
 
-        # --- enter csv_acc folder ---
         csv_acc_path = os.path.join(day_path, "csv_acc")
         if not os.path.exists(csv_acc_path):
             print(f"Skipping {day_folder}: no csv_acc folder found")
             continue
 
-        print(f"\nProcessing {day_folder} ...")
+        print(f"\nProcessing day: {day_folder}")
+        results = []
 
-        # Process hourly CSV files inside csv_acc folder
+        # Process hourly CSVs inside csv_acc folder
         for file in tqdm(sorted(os.listdir(csv_acc_path)), desc=f"{day_folder}", unit="file"):
             if not file.endswith(".csv"):
                 continue
 
             file_path = os.path.join(csv_acc_path, file)
 
-            # Read only the sensor column (and time if present)
             try:
-                print('\n\n\n', file_path)
-                df = pd.read_csv(file_path, usecols=["time", f'{sensor_name}'], sep=';')
+                df = pd.read_csv(file_path, usecols=["time", sensor_name], sep=';')
             except ValueError:
-                # If time not present, fallback
-                df = pd.read_csv(file_path, usecols=[sensor_name], sep=';')
-                df["time"] = range(len(df))
+                print(f"Skipping file (missing columns): {file_path}, check the column names!")
+                continue
 
-            # Process in chunks
+            # Compute reduced features in chunks
             for i in range(0, len(df), chunk_size):
                 chunk = df.iloc[i:i + chunk_size]
                 if len(chunk) < chunk_size:
@@ -68,13 +61,14 @@ def process_sensor_files(root_dir, sensor_name, output_csv, chunk_size=100):
                     "log_variance": log_var,
                 })
 
-    # Save results to a single CSV
-    if results:
-        results_df = pd.DataFrame(results)
-        results_df.to_csv(output_csv, index=False)
-        print(f"\n Reduced dataset saved to {output_csv} ({len(results_df)} rows)")
-    else:
-        print("\n No data processed.")
+        # Save the day's result to a CSV file
+        if results:
+            results_df = pd.DataFrame(results)
+            output_path = os.path.join(output_dir, f"{day_folder}.csv")
+            results_df.to_csv(output_path, index=False)
+            print(f"Saved reduced CSV for {day_folder} → {output_path} ({len(results_df)} rows)")
+        else:
+            print(f" No valid data found for {day_folder}")
 
 
 def log_normal_variance(variance):
@@ -85,19 +79,15 @@ def log_normal_variance(variance):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Reduce frequency of sensor CSV data (per 100 samples)")
+    parser = argparse.ArgumentParser(description="Reduce frequency of sensor CSV data (daily outputs)")
     parser.add_argument("--root_dir", type=str, required=True, help="Path to parent folder containing date folders")
     parser.add_argument("--sensor_channel", type=str, required=True, help="Sensor column name (e.g., 03091002_x)")
     parser.add_argument("--chunk_size", type=int, default=100, help="Number of samples per averaging chunk")
-    parser.add_argument("--output", type=str, required=True, help="Path to output CSV file")
+    parser.add_argument("--output", type=str, required=True, help="Directory to save reduced daily CSVs")
 
     args = parser.parse_args()
-
     process_sensor_files(args.root_dir, args.sensor_channel, args.output, args.chunk_size)
 
-
-
-#examplehow to use the script: python3 frequency_reduction.py --root_dir /Users/thomas/Data/Data_sensors --sensor_channel 030911EF_x --output /Users/thomas/Data/Data_sensors/output.csv
 
 if __name__ == "__main__":
     main()
