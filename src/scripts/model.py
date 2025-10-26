@@ -12,14 +12,28 @@ from config import config
 class LSTMEncoder(nn.Module):
     """
     LSTM Encoder: Compresses sequences into latent representation.
+    
+    Architecture (3 LSTM layers):
+    - LSTM Layer 1: input_dim → hidden_dims[0] (return_sequences=True)
+    - LSTM Layer 2: hidden_dims[0] → hidden_dims[1] (return_sequences=True)
+    - LSTM Layer 3: hidden_dims[1] → hidden_dims[2] (return_sequences=False, takes last timestep)
+    - Dense: hidden_dims[2] → latent_dim
+    
+    NOW USING 2 FEATURES: mean and log_variance (variance removed)
+    
+    CHANGES from previous version:
+    1. Removed bidirectional (was doubling hidden dims)
+    2. Added 3rd LSTM layer for deeper architecture
+    3. return_sequences=True for all but last LSTM layer
+    4. Only last timestep is used from final LSTM
     """
     
     def __init__(self, 
-                 input_dim: int = 3,
-                 hidden_dims: list = [64, 32],
+                 input_dim: int = 2,  # Changed from 3 to 2 features
+                 hidden_dims: list = [128, 64, 32],
                  latent_dim: int = 16,
                  dropout: float = 0.2,
-                 bidirectional: bool = True):
+                 bidirectional: bool = False):
         super(LSTMEncoder, self).__init__()
         
         self.input_dim = input_dim
@@ -34,7 +48,7 @@ class LSTMEncoder(nn.Module):
         self.dropout_layers = nn.ModuleList()
         
         current_dim = input_dim
-        for hidden_dim in hidden_dims:
+        for i, hidden_dim in enumerate(hidden_dims):
             lstm = nn.LSTM(
                 input_size=current_dim,
                 hidden_size=hidden_dim,
@@ -55,20 +69,24 @@ class LSTMEncoder(nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
         Forward pass through encoder.
+        
         Args:
-            x: Input tensor of shape (batch_size, seq_length, input_dim)    
+            x: Input tensor of shape (batch_size, seq_length, input_dim)
+            
         Returns:
             Latent representation of shape (batch_size, latent_dim)
         """
         batch_size = x.size(0)
         
         # Pass through LSTM layers
-        for lstm, dropout in zip(self.lstm_layers, self.dropout_layers):
+        # For all layers: output shape = (batch_size, seq_length, hidden_dim * num_directions)
+        for i, (lstm, dropout) in enumerate(zip(self.lstm_layers, self.dropout_layers)):
             x, (h_n, c_n) = lstm(x)
             x = dropout(x)
         
-        # Take the last time step output
-        # x shape: (batch_size, seq_length, hidden_dim * num_directions)
+        # Take the last time step output from final LSTM
+        # This is equivalent to return_sequences=False in Keras
+        # x shape before: (batch_size, seq_length, hidden_dim * num_directions)
         x = x[:, -1, :]  # (batch_size, hidden_dim * num_directions)
         
         # Map to latent space
@@ -80,12 +98,26 @@ class LSTMEncoder(nn.Module):
 class LSTMDecoder(nn.Module):
     """
     LSTM Decoder: Reconstructs sequences from latent representation.
+    
+    Architecture (3 LSTM layers):
+    - Dense: latent_dim → hidden_dims[0]
+    - RepeatVector: Repeat for seq_length timesteps
+    - LSTM Layer 1: hidden_dims[0] → hidden_dims[1] (return_sequences=True)
+    - LSTM Layer 2: hidden_dims[1] → hidden_dims[2] (return_sequences=True)
+    - LSTM Layer 3: hidden_dims[2] → hidden_dims[2] (return_sequences=True)
+    - TimeDistributed Dense: hidden_dims[2] → output_dim (applied to each timestep)
+    
+    CHANGES from previous version:
+    1. Added 3rd LSTM layer for deeper architecture
+    2. All LSTM layers use return_sequences=True
+    3. Final Dense layer acts as TimeDistributed (applied to each timestep)
+    4. Architecture mirrors encoder in reverse
     """
     
     def __init__(self,
                  latent_dim: int = 16,
-                 hidden_dims: list = [64, 32],
-                 output_dim: int = 3,
+                 hidden_dims: list = [32, 64, 128],
+                 output_dim: int = 2,  # Changed from 3 to 2 features
                  seq_length: int = 60,
                  dropout: float = 0.2):
         super(LSTMDecoder, self).__init__()
@@ -96,18 +128,18 @@ class LSTMDecoder(nn.Module):
         self.seq_length = seq_length
         self.dropout = dropout
         
-        # Fully connected layer to expand latent
+        # Fully connected layer to expand latent to first hidden dimension
         self.fc_expand = nn.Linear(latent_dim, hidden_dims[0])
         
-        # Build LSTM layers
+        # Build LSTM layers (all with return_sequences=True)
         self.lstm_layers = nn.ModuleList()
         self.dropout_layers = nn.ModuleList()
         
         for i in range(len(hidden_dims)):
             if i == 0:
-                input_dim = hidden_dims[0]
+                input_dim = hidden_dims[0]  # First LSTM takes expanded latent
             else:
-                input_dim = hidden_dims[i-1]
+                input_dim = hidden_dims[i-1]  # Subsequent LSTMs take previous output
             
             lstm = nn.LSTM(
                 input_size=input_dim,
@@ -119,7 +151,8 @@ class LSTMDecoder(nn.Module):
             self.lstm_layers.append(lstm)
             self.dropout_layers.append(nn.Dropout(dropout))
         
-        # Final output layer
+        # Final output layer (TimeDistributed Dense)
+        # This will be applied to each timestep independently
         self.fc_output = nn.Linear(hidden_dims[-1], output_dim)
         
     def forward(self, latent: torch.Tensor) -> torch.Tensor:
@@ -134,19 +167,25 @@ class LSTMDecoder(nn.Module):
         """
         batch_size = latent.size(0)
         
-        # Expand latent
+        # Expand latent to first hidden dimension
         x = self.fc_expand(latent)  # (batch_size, hidden_dims[0])
         
-        # Repeat for sequence length
-        x = x.unsqueeze(1).repeat(1, self.seq_length, 1)  # (batch_size, seq_length, hidden_dims[0])
+        # RepeatVector: Repeat the vector for seq_length timesteps
+        # This is equivalent to Keras RepeatVector layer
+        x = x.unsqueeze(1).repeat(1, self.seq_length, 1)  
+        # Shape: (batch_size, seq_length, hidden_dims[0])
         
-        # Pass through LSTM layers
+        # Pass through LSTM layers (all return full sequences)
         for lstm, dropout in zip(self.lstm_layers, self.dropout_layers):
             x, (h_n, c_n) = lstm(x)
+            # x shape: (batch_size, seq_length, hidden_dims[i])
             x = dropout(x)
         
-        # Map to output dimension
-        output = self.fc_output(x)  # (batch_size, seq_length, output_dim)
+        # Apply TimeDistributed Dense: map each timestep to output dimension
+        # We apply the same linear transformation to each timestep
+        # x shape before: (batch_size, seq_length, hidden_dims[-1])
+        output = self.fc_output(x)  
+        # output shape: (batch_size, seq_length, output_dim)
         
         return output
 
@@ -210,8 +249,10 @@ class LSTMAutoencoder(nn.Module):
     def forward(self, x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Forward pass through autoencoder.
+        
         Args:
-            x: Input tensor of shape (batch_size, seq_length, input_dim)         
+            x: Input tensor of shape (batch_size, seq_length, input_dim)
+            
         Returns:
             Tuple of (reconstructed, latent):
                 - reconstructed: (batch_size, seq_length, output_dim)

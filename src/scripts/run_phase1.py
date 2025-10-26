@@ -59,7 +59,7 @@ def run_phase1_pipeline(data_file: Path = None,
     
     processed_dir = Path("/data/pool/c8x-98x/bridge_data/100_days/data/processed")
     checkpoint_dir = Path("/data/pool/c8x-98x/bridge_data/100_days/data/checkpoints")
-    results_dir = Path("/data/pool/c8x-98x/bridge_data/100_days/data/results")
+    results_dir = Path("/data/pool/c8x-98x/pml/src/results/figures")
     
     # Create directories
     processed_dir.mkdir(parents=True, exist_ok=True)

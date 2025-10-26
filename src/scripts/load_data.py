@@ -102,7 +102,7 @@ def explore_data(df: pd.DataFrame, show_plots: bool = True) -> dict:
     
     # Visualization
     if show_plots:
-        plot_data_exploration(df[:10000])
+        plot_data_exploration(df)
     
     return stats
 
@@ -171,6 +171,8 @@ def extract_features(df: pd.DataFrame) -> np.ndarray:
         NumPy array of shape (n_samples, 3) with [mean, variance, log_variance]
     """
     features = df[config.FEATURE_COLUMNS].values
+    features = np.abs(features)
+
     return features
 
 

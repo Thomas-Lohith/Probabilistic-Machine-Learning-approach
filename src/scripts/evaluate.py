@@ -15,17 +15,25 @@ from model import create_model
 from dataset import load_processed_data, create_dataloaders
 
 
-def calculate_metrics(y_true: np.ndarray, y_pred: np.ndarray) -> Dict[str, float]:
+def calculate_metrics(y_true: np.ndarray, y_pred: np.ndarray, use_abs: bool = True) -> Dict[str, float]:
     """
     Calculate reconstruction metrics.
     
     Args:
         y_true: Ground truth array of shape (n_samples, seq_length, n_features)
         y_pred: Predicted array of same shape
+        use_abs: If True, apply absolute values to y_true before comparison
+                 (set to True to match the preprocessing in load_data.py)
         
     Returns:
         Dictionary of metrics
     """
+    # Apply absolute values to ground truth if requested
+    # This ensures we compare abs(original) with predictions
+    if use_abs:
+        y_true = np.abs(y_true)
+        print(f"   📊 Applied abs() to ground truth for fair comparison")
+    
     # Flatten arrays for sklearn metrics
     y_true_flat = y_true.reshape(-1)
     y_pred_flat = y_pred.reshape(-1)
@@ -92,7 +100,8 @@ def evaluate_model(model: torch.nn.Module,
 def plot_reconstruction_samples(originals: np.ndarray,
                                 reconstructions: np.ndarray,
                                 n_samples: int = 5,
-                                save_path: Path = None):
+                                save_path: Path = None,
+                                use_abs: bool = True):
     """
     Plot original vs reconstructed sequences.
     
@@ -101,10 +110,17 @@ def plot_reconstruction_samples(originals: np.ndarray,
         reconstructions: Reconstructed sequences (same shape)
         n_samples: Number of samples to plot
         save_path: Path to save figure
+        use_abs: If True, apply absolute values to originals before plotting
+                 (set to True to match the preprocessing in load_data.py)
     """
-    n_samples = min(n_samples, len(originals))
+    # Apply absolute values to originals if requested
+    if use_abs:
+        originals = np.abs(originals)
     
-    fig, axes = plt.subplots(n_samples, 3, figsize=(15, 3*n_samples))
+    n_samples = min(n_samples, len(originals))
+    n_features = len(config.FEATURE_COLUMNS)
+    
+    fig, axes = plt.subplots(n_samples, n_features, figsize=(15, 3*n_samples))
     
     if n_samples == 1:
         axes = axes.reshape(1, -1)
@@ -120,7 +136,7 @@ def plot_reconstruction_samples(originals: np.ndarray,
             ax = axes[i, j]
             
             # Plot original and reconstruction
-            ax.plot(orig[:, j], label='Original', alpha=0.7, linewidth=2)
+            ax.plot(orig[:, j], label='Original (abs)', alpha=0.7, linewidth=2)
             ax.plot(recon[:, j], label='Reconstructed', alpha=0.7, linewidth=2, linestyle='--')
             
             ax.set_title(f'Sample {i+1} - {feature_name}')
@@ -183,6 +199,79 @@ def plot_latent_space(latents: np.ndarray, save_path: Path = None):
     plt.close()
 
 
+def plot_training_history(history_file: Path, save_path: Path = None):
+    """
+    Plot training and validation loss curves from training history.
+    
+    Args:
+        history_file: Path to history.json file
+        save_path: Path to save figure
+    """
+    import json
+    
+    # Load training history
+    if not history_file.exists():
+        print(f"  History file not found: {history_file}")
+        return
+    
+    with open(history_file, 'r') as f:
+        history = json.load(f)
+    
+    # Create figure
+    fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+    
+    epochs = range(1, len(history['train_loss']) + 1)
+    
+    # Plot 1: Training and Validation Loss
+    ax1 = axes[0]
+    ax1.plot(epochs, history['train_loss'], 'b-', label='Training Loss', linewidth=2)
+    ax1.plot(epochs, history['val_loss'], 'r-', label='Validation Loss', linewidth=2)
+    ax1.set_xlabel('Epoch', fontsize=12)
+    ax1.set_ylabel('Loss (MSE)', fontsize=12)
+    ax1.set_title('Training and Validation Loss', fontsize=14, fontweight='bold')
+    ax1.legend(fontsize=11)
+    ax1.grid(True, alpha=0.3)
+    
+    # Find best epoch
+    best_epoch = np.argmin(history['val_loss']) + 1
+    best_val_loss = min(history['val_loss'])
+    ax1.axvline(best_epoch, color='g', linestyle='--', alpha=0.5, label=f'Best Epoch: {best_epoch}')
+    ax1.plot(best_epoch, best_val_loss, 'go', markersize=10)
+    ax1.legend(fontsize=11)
+    
+    # Plot 2: Learning Rate Schedule
+    ax2 = axes[1]
+    if 'learning_rate' in history and history['learning_rate']:
+        ax2.plot(epochs, history['learning_rate'], 'g-', linewidth=2)
+        ax2.set_xlabel('Epoch', fontsize=12)
+        ax2.set_ylabel('Learning Rate', fontsize=12)
+        ax2.set_title('Learning Rate Schedule', fontsize=14, fontweight='bold')
+        ax2.set_yscale('log')
+        ax2.grid(True, alpha=0.3)
+    else:
+        ax2.text(0.5, 0.5, 'No learning rate data available',
+                ha='center', va='center', fontsize=12)
+        ax2.set_xticks([])
+        ax2.set_yticks([])
+    
+    plt.tight_layout()
+    
+    if save_path:
+        #save_path.parent.mkdir(parents=True, exist_ok=True)
+        plt.savefig(save_path, dpi=150, bbox_inches='tight')
+        print(f"📊 Saved training history plot to: {save_path}")
+    
+    # Print summary
+    print(f"\n📈 Training Summary:")
+    print(f"   Total epochs: {len(epochs)}")
+    print(f"   Best epoch: {best_epoch}")
+    print(f"   Best val loss: {best_val_loss:.6f}")
+    print(f"   Final train loss: {history['train_loss'][-1]:.6f}")
+    print(f"   Final val loss: {history['val_loss'][-1]:.6f}")
+    
+    plt.close()
+
+
 def print_evaluation_report(metrics: Dict[str, float]):
     """Print formatted evaluation report."""
     print("\n" + "="*60)
@@ -233,7 +322,7 @@ def evaluate_phase1(checkpoint_path: Path,
         output_dir: Directory to save results
     """
     if output_dir is None:
-        output_dir = Path("/data/pool/c8x-98x/bridge_data/100_days/data/results")
+        output_dir = Path("/data/pool/c8x-98x/pml/src/results/figures")
     output_dir.mkdir(parents=True, exist_ok=True)
     
     print("\n" + "="*80)
@@ -249,7 +338,7 @@ def evaluate_phase1(checkpoint_path: Path,
     checkpoint = torch.load(checkpoint_path, map_location=config.DEVICE)
     model.load_state_dict(checkpoint['model_state_dict'])
     
-    print(f"\n Loaded model from: {checkpoint_path}")
+    print(f"\n✅ Loaded model from: {checkpoint_path}")
     print(f"   Training epoch: {checkpoint['epoch']}")
     print(f"   Validation loss: {checkpoint['val_loss']:.6f}")
     
@@ -259,21 +348,35 @@ def evaluate_phase1(checkpoint_path: Path,
         model, test_loader, config.DEVICE
     )
     
-    # Calculate metrics
-    test_metrics = calculate_metrics(test_originals, test_reconstructions)
+    print(f"\n📊 Comparison Mode: Using absolute values")
+    print(f"   Originals will be converted to abs() before comparison")
+    print(f"   This matches the preprocessing in load_data.py")
+    
+    # Calculate metrics (with absolute values applied to originals)
+    test_metrics = calculate_metrics(test_originals, test_reconstructions, use_abs=True)
     
     # Print report
     print_evaluation_report(test_metrics)
     
     # Create visualizations
-    print(f"\n Creating visualizations...")
+    print(f"\n📊 Creating visualizations...")
+
+     # Training history (loss curves)
+    history_file = checkpoint_path.parent / "history.json"
+    plot_training_history(
+        history_file,
+        save_path=output_dir / "training_history.png"
+    )
+    
+
     
     # Reconstruction samples
     plot_reconstruction_samples(
         test_originals,
         test_reconstructions,
         n_samples=5,
-        save_path=output_dir / "reconstruction_samples.png"
+        save_path=output_dir / "reconstruction_samples.png",
+        use_abs=True  # Apply abs() to originals for fair comparison
     )
     
     # Latent space
@@ -307,7 +410,7 @@ if __name__ == "__main__":
     # Evaluate Phase 1
     checkpoint_path = Path("/data/pool/c8x-98x/bridge_data/100_days/data/checkpoints/best.pt")
     processed_file = Path("/data/pool/c8x-98x/bridge_data/100_days/data/processed/20241127_processed.npz")
-    output_dir = Path("/data/pool/c8x-98x/bridge_data/100_days/data/results")
+    output_dir = Path("/data/pool/c8x-98x/pml/src/results/figures")
     
     if checkpoint_path.exists() and processed_file.exists():
         print("Starting Phase 1 evaluation...")
@@ -322,8 +425,8 @@ if __name__ == "__main__":
         
     else:
         if not checkpoint_path.exists():
-            print(f" Checkpoint not found: {checkpoint_path}")
+            print(f"❌ Checkpoint not found: {checkpoint_path}")
             print("Run train.py first!")
         if not processed_file.exists():
-            print(f" Processed file not found: {processed_file}")
+            print(f"❌ Processed file not found: {processed_file}")
             print("Run preprocess.py first!")

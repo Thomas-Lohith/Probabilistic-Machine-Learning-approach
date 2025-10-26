@@ -36,12 +36,12 @@ class Config:
     # ============================================
     # CSV column names
     COLUMNS = ['day', 'hour_file', 'start_time', 'end_time', 'mean', 'variance', 'log_variance']
-    FEATURE_COLUMNS = ['mean', 'variance', 'log_variance']
+    FEATURE_COLUMNS = ['mean', 'log_variance'] #, 'variance'
     
     # Time specifications
     SECONDS_PER_DAY = 86400
     SEQUENCE_LENGTH = 60  # 60 seconds per sequence
-    N_FEATURES = 3  # mean, variance, log_variance
+    N_FEATURES = 2  # mean, variance, log_variance
     
     # Data split ratios
     TRAIN_RATIO = 0.70
@@ -52,14 +52,14 @@ class Config:
     # Model Architecture
     # ============================================
     # LSTM Encoder
-    ENCODER_HIDDEN_DIMS = [64, 32]  # LSTM layers (will be doubled due to bidirectional)
-    ENCODER_BIDIRECTIONAL = True
+    ENCODER_HIDDEN_DIMS = [128, 64, 32]  # LSTM layers (will be doubled due to bidirectional)
+    ENCODER_BIDIRECTIONAL = False
     
     # Latent space
     LATENT_DIM = 32  # Compression bottleneck
     
     # LSTM Decoder
-    DECODER_HIDDEN_DIMS = [64, 32]
+    DECODER_HIDDEN_DIMS = [32, 64, 128]
     
     # Regularization
     DROPOUT = 0.2
@@ -68,8 +68,8 @@ class Config:
     # Training Hyperparameters
     # ============================================
     # Basic training
-    BATCH_SIZE = 64  # Can increase to 512 on A100
-    EPOCHS = 50
+    BATCH_SIZE = 100 # Can increase to 512 on A100
+    EPOCHS = 100
     LEARNING_RATE = 1e-3
     WEIGHT_DECAY = 1e-5
     
@@ -78,7 +78,7 @@ class Config:
     BETAS = (0.9, 0.999)
     
     # Scheduler (OneCycleLR)
-    USE_SCHEDULER = True
+    USE_SCHEDULER = False
     MAX_LR = 1e-3
     PCT_START = 0.3  # 30% warmup
     DIV_FACTOR = 25.0
@@ -120,7 +120,7 @@ class Config:
     # Phase 1: Single Day Settings
     # ============================================
     PHASE1_TEST_FILE = "20241127.csv"  # Single day for initial testing
-    PHASE1_QUICK_EPOCHS = 30  # Faster iteration for testing
+    PHASE1_QUICK_EPOCHS = 20  # Faster iteration for testing
     
     # ============================================
     # Computed Properties

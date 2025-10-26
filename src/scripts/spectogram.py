@@ -189,7 +189,7 @@ def power_spectrum(df, sensor_column):
     #plt.legend(fontsize=8)
     plt.grid(True, ls='--', alpha=0.6)
     plt.tight_layout()
-    plt.savefig('graphs/power_spectrum.png')
+    #plt.savefig('graphs/power_spectrum.png')
 
     plt.show()
 
@@ -213,7 +213,7 @@ def compare_diff_windows(df, sensor_column):
     plt.legend(fontsize=8)
     plt.grid(True, ls='--', alpha=0.6)
     plt.tight_layout()
-    plt.savefig('graphs/psd_window_comparison.png')
+    #plt.savefig('graphs/psd_window_comparison.png')
     plt.show()
 
 def plot_comparing_windows_grid_with_peaks(df, sensor_column, save_path=None):
@@ -278,8 +278,10 @@ def plot_comparing_windows_grid_with_peaks(df, sensor_column, save_path=None):
 
     if save_path:
         plt.savefig(save_path)
+        #plt.savefig(f'graphs/windows_comp/{sensor_column}_psd_window_comparison_with_peak_detection_20freq.png')
         plt.show()
     else:
+        plt.savefig(f'/data/pool/c8x-98x/pml/src/scripts/results/figures/wind_comp/{sensor_column}_psd_window_comparison_20f.png')
         plt.show()
 
 
@@ -288,12 +290,12 @@ def main():
     parser = argparse.ArgumentParser(description="create a spectogram, using sensor data using for specific columns")
     parser.add_argument('--path', type=str, required=True, help="Path to file")
     parser.add_argument("--sensor", type=str, required=True, help="Sensor column name(s) to process")
-    parser.add_argument('--date', type=str, required=True, help="target date and hour ")
+    #parser.add_argument('--date', type=str, required=True, help="target date and hour ")
     args = parser.parse_args()
 
     path = args.path
     sensor_column = args.sensor
-    target_date = args.date
+    #target_date = args.date
 
     df = sensor_data(path, sensor_column)
 
@@ -305,14 +307,14 @@ def main():
 
     #threeD_spectogram(df[:10000], sensor_column)
 
-    fft_spectrum(df, sensor_column)
+    #fft_spectrum(df, sensor_column)
 
     power_spectrum(df, sensor_column)
 
     #compare_diff_windows(df[:100000], sensor_column)
 
     plot_comparing_windows_grid_with_peaks(df, sensor_column,
-                                           save_path=f'graphs/spectrum/psd_window_comparison_{target_date.replace("-", "_")}.png' )
+                                           save_path=f'/data/pool/c8x-98x/pml/src/scripts/results/figures/wind_comp/{sensor_column}_psd_window_comparison_20f.png' )
     
 if __name__ == "__main__":
     main()
