@@ -32,6 +32,7 @@ def calculate_metrics(y_true: np.ndarray, y_pred: np.ndarray, use_abs: bool = Tr
     # This ensures we compare abs(original) with predictions
     if use_abs:
         y_true = np.abs(y_true)
+        #y_pred = np.abs(y_pred)
         print(f"   📊 Applied abs() to ground truth for fair comparison")
     
     # Flatten arrays for sklearn metrics
@@ -60,17 +61,7 @@ def calculate_metrics(y_true: np.ndarray, y_pred: np.ndarray, use_abs: bool = Tr
 def evaluate_model(model: torch.nn.Module, 
                    dataloader,
                    device: str = None) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """
-    Evaluate model on a dataset.
-    
-    Args:
-        model: Trained model
-        dataloader: DataLoader for evaluation
-        device: Device to run on
-        
-    Returns:
-        Tuple of (originals, reconstructions, latents)
-    """
+  
     if device is None:
         device = config.DEVICE
     
@@ -102,20 +93,10 @@ def plot_reconstruction_samples(originals: np.ndarray,
                                 n_samples: int = 5,
                                 save_path: Path = None,
                                 use_abs: bool = True):
-    """
-    Plot original vs reconstructed sequences.
-    
-    Args:
-        originals: Original sequences (n_sequences, seq_length, n_features)
-        reconstructions: Reconstructed sequences (same shape)
-        n_samples: Number of samples to plot
-        save_path: Path to save figure
-        use_abs: If True, apply absolute values to originals before plotting
-                 (set to True to match the preprocessing in load_data.py)
-    """
     # Apply absolute values to originals if requested
     if use_abs:
         originals = np.abs(originals)
+        reconstructions = np.abs(reconstructions)
     
     n_samples = min(n_samples, len(originals))
     n_features = len(config.FEATURE_COLUMNS)
@@ -156,13 +137,7 @@ def plot_reconstruction_samples(originals: np.ndarray,
 
 
 def plot_latent_space(latents: np.ndarray, save_path: Path = None):
-    """
-    Visualize latent space distribution.
-    
-    Args:
-        latents: Latent representations (n_sequences, latent_dim)
-        save_path: Path to save figure
-    """
+
     fig, axes = plt.subplots(1, 2, figsize=(14, 5))
     
     # 1. Distribution of latent dimensions
@@ -200,13 +175,7 @@ def plot_latent_space(latents: np.ndarray, save_path: Path = None):
 
 
 def plot_training_history(history_file: Path, save_path: Path = None):
-    """
-    Plot training and validation loss curves from training history.
-    
-    Args:
-        history_file: Path to history.json file
-        save_path: Path to save figure
-    """
+
     import json
     
     # Load training history
@@ -313,14 +282,7 @@ def print_evaluation_report(metrics: Dict[str, float]):
 def evaluate_phase1(checkpoint_path: Path,
                     processed_file: Path,
                     output_dir: Path = None):
-    """
-    Complete evaluation for Phase 1.
-    
-    Args:
-        checkpoint_path: Path to model checkpoint
-        processed_file: Path to processed data
-        output_dir: Directory to save results
-    """
+
     if output_dir is None:
         output_dir = Path("/data/pool/c8x-98x/pml/src/results/figures")
     output_dir.mkdir(parents=True, exist_ok=True)

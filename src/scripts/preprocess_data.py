@@ -1,10 +1,4 @@
-"""
-Preprocessing pipeline for bridge accelerometer data
-- Handle missing values (NaN)
-- Normalize features
-- Create sequences
-- Train/Val/Test split
-"""
+
 import numpy as np
 import pandas as pd
 from pathlib import Path
@@ -25,17 +19,9 @@ class DataPreprocessor:
     def __init__(self):
         self.scaler = StandardScaler()
         self.is_fitted = False
-        
+
     def handle_missing_values(self, features: np.ndarray, method: str = 'interpolate') -> np.ndarray:
-        """
-        Handle missing (NaN) values in the data.
-        Args:
-            features: Array of shape (n_samples, n_features)
-            method: 'interpolate', 'forward_fill', or 'remove'
-            
-        Returns:
-            Array with NaN values handled
-        """
+
         print(f"\n Handling missing values (method: {method})...")
         
         # Count NaN before
@@ -80,16 +66,7 @@ class DataPreprocessor:
         return features
     
     def normalize(self, features: np.ndarray, fit: bool = True) -> np.ndarray:
-        """
-        Normalize features using StandardScaler (z-score normalization).
-        
-        Args:
-            features: Array of shape (n_samples, n_features)
-            fit: Whether to fit the scaler (True for training data only)
-            
-        Returns:
-            Normalized features
-        """
+    
         print(f"\n📏 Normalizing features (fit={fit})...")
         
         if fit:
@@ -106,15 +83,7 @@ class DataPreprocessor:
         return normalized
     
     def inverse_normalize(self, normalized_features: np.ndarray) -> np.ndarray:
-        """
-        Convert normalized features back to original scale.
-        
-        Args:
-            normalized_features: Normalized array
-            
-        Returns:
-            Original scale features
-        """
+
         if not self.is_fitted:
             raise ValueError("Scaler not fitted!")
         
@@ -236,17 +205,7 @@ class DataPreprocessor:
 def preprocess_single_day(csv_path: Path, 
                           output_dir: Path = None,
                           save_processed: bool = True) -> Tuple:
-    """
-    Complete preprocessing pipeline for a single day of data.
-    
-    Args:
-        csv_path: Path to CSV file
-        output_dir: Directory to save processed data
-        save_processed: Whether to save processed files
-        
-    Returns:
-        Tuple of (train, val, test, preprocessor)
-    """
+
     print("\n" + "="*60)
     print(f"PREPROCESSING: {csv_path.name}")
     print("="*60)
@@ -309,18 +268,4 @@ if __name__ == "__main__":
     # Test preprocessing on Phase 1 file
     test_file = Path("/data/pool/c8x-98x/bridge_data/100_days") / config.PHASE1_TEST_FILE
     
-    if test_file.exists():
-        print(f"Testing preprocessing with: {test_file}")
-        
-        train, val, test, preprocessor = preprocess_single_day(
-            test_file,
-            output_dir=Path(config.PROCESSED_DATA_DIR),
-            save_processed=True
-        )
-        
-        print("\n Preprocessing test successful!")
-        print(f"   Compression ratio: {config.compression_ratio:.2f}x")
-        print(f"   Ready for model training!")
-        
-    else:
-        print(f"Test file not found: {test_file}")
+   

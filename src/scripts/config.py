@@ -53,7 +53,7 @@ class Config:
     # ============================================
     # LSTM Encoder
     ENCODER_HIDDEN_DIMS = [128, 64, 32]  # LSTM layers (will be doubled due to bidirectional)
-    ENCODER_BIDIRECTIONAL = False
+    ENCODER_BIDIRECTIONAL = True
     
     # Latent space
     LATENT_DIM = 32  # Compression bottleneck
@@ -68,8 +68,8 @@ class Config:
     # Training Hyperparameters
     # ============================================
     # Basic training
-    BATCH_SIZE = 100 # Can increase to 512 on A100
-    EPOCHS = 100
+    BATCH_SIZE = 512 # Can increase to 512 on A100
+    EPOCHS = 1000
     LEARNING_RATE = 1e-3
     WEIGHT_DECAY = 1e-5
     
@@ -88,7 +88,7 @@ class Config:
     GRADIENT_CLIP_VALUE = 1.0
     
     # Mixed precision training
-    USE_MIXED_PRECISION = True
+    USE_MIXED_PRECISION = False
     
     # ============================================
     # Training Settings
@@ -99,7 +99,7 @@ class Config:
     PIN_MEMORY = True
     
     # Checkpointing
-    SAVE_EVERY_N_EPOCHS = 5
+    SAVE_EVERY_N_EPOCHS = 25
     PATIENCE = 10  # Early stopping patience
     
     # Logging

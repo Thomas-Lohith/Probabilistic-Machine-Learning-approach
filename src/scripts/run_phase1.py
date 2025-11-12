@@ -41,14 +41,6 @@ def check_environment():
 def run_phase1_pipeline(data_file: Path = None,
                        skip_exploration: bool = False,
                        quick_test: bool = False):
-    """
-    Run complete Phase 1 pipeline.
-    
-    Args:
-        data_file: Path to CSV file (default: config.PHASE1_TEST_FILE)
-        skip_exploration: Skip data exploration step
-        quick_test: Use fewer epochs for quick testing
-    """
     
     # Check environment
     check_environment()

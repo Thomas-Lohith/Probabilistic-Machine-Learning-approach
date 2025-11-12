@@ -290,15 +290,6 @@ class LSTMAutoencoder(nn.Module):
 
 
 def create_model(device: str = None) -> LSTMAutoencoder:
-    """
-    Create and initialize LSTM Autoencoder model.
-    
-    Args:
-        device: Device to place model on (default: config.DEVICE)
-        
-    Returns:
-        Initialized model on specified device
-    """
     if device is None:
         device = config.DEVICE
     

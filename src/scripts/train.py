@@ -1,6 +1,3 @@
-"""
-Training script for LSTM Autoencoder
-"""
 
 import torch
 import torch.nn as nn
@@ -37,7 +34,7 @@ class Trainer:
         self.epochs = epochs if epochs else config.EPOCHS
         
         # Loss function
-        self.criterion = nn.MSELoss()
+        self.criterion = nn.L1Loss()    #nn.MSELoss()
         
         # Optimizer
         if learning_rate is None:
@@ -291,14 +288,7 @@ class Trainer:
 
 
 def train_phase1(processed_file: Path, save_dir: Path = None, quick_test: bool = False):
-    """
-    Train on Phase 1 single day data.
-    
-    Args:
-        processed_file: Path to processed .npz file
-        save_dir: Directory to save checkpoints
-        quick_test: If True, use fewer epochs for quick testing
-    """
+
     print("\n" + "="*80)
     print("PHASE 1: SINGLE DAY TRAINING")
     print("="*80)
@@ -344,5 +334,5 @@ if __name__ == "__main__":
         print("\n🎉 Phase 1 training complete!")
         
     else:
-        print(f"❌ Processed file not found: {processed_file}")
+        print(f" Processed file not found: {processed_file}")
         print("Run preprocess.py first!")

@@ -42,20 +42,7 @@ def create_dataloaders(train: np.ndarray,
                        batch_size: int = None,
                        num_workers: int = None,
                        pin_memory: bool = None) -> Tuple[DataLoader, DataLoader, DataLoader]:
-    """
-    Create PyTorch DataLoaders for train, validation, and test sets.
-    
-    Args:
-        train: Training sequences
-        val: Validation sequences
-        test: Test sequences
-        batch_size: Batch size (default: config.BATCH_SIZE)
-        num_workers: Number of data loading workers (default: config.NUM_WORKERS)
-        pin_memory: Whether to use pinned memory (default: config.PIN_MEMORY)
-        
-    Returns:
-        Tuple of (train_loader, val_loader, test_loader)
-    """
+  
     if batch_size is None:
         batch_size = config.BATCH_SIZE
     if num_workers is None:
@@ -85,7 +72,7 @@ def create_dataloaders(train: np.ndarray,
     train_loader = DataLoader(
         train_dataset,
         batch_size=batch_size,
-        shuffle=True,  # Shuffle training data
+        shuffle=False,  # Shuffle training data
         num_workers=num_workers,
         pin_memory=pin_memory,
         drop_last=True  # Drop last incomplete batch
@@ -119,16 +106,8 @@ def create_dataloaders(train: np.ndarray,
     return train_loader, val_loader, test_loader
 
 
-def load_processed_data(processed_file: Path) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """
-    Load preprocessed data from .npz file.
-    
-    Args:
-        processed_file: Path to .npz file
-        
-    Returns:
-        Tuple of (train, val, test) arrays
-    """
+def load_processed_data(processed_file: Path) -> Tuple[np.ndarray, np.ndarray, np.ndarray]: 
+
     print(f"\n📂 Loading processed data from: {processed_file}")
     
     data = np.load(processed_file)
@@ -148,28 +127,4 @@ if __name__ == "__main__":
     # Test dataset creation
     print("Testing Dataset and DataLoader...")
     
-    # Create dummy data
-    n_sequences = 1000
-    seq_length = config.SEQUENCE_LENGTH
-    n_features = config.N_FEATURES
-    
-    dummy_train = np.random.randn(n_sequences, seq_length, n_features)
-    dummy_val = np.random.randn(n_sequences//5, seq_length, n_features)
-    dummy_test = np.random.randn(n_sequences//5, seq_length, n_features)
-    
-    # Create dataloaders
-    train_loader, val_loader, test_loader = create_dataloaders(
-        dummy_train,
-        dummy_val,
-        dummy_test,
-        batch_size=64
-    )
-    
-    # Test iteration
-    print("\n🔄 Testing data iteration...")
-    for batch_idx, batch in enumerate(train_loader):
-        print(f"Batch {batch_idx}: {batch.shape}")
-        if batch_idx >= 2:  # Just test first 3 batches
-            break
-    
-    print("\n Dataset test successful!")
+  

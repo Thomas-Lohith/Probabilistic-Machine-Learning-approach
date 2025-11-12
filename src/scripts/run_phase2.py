@@ -32,7 +32,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Phase 2: Multi-Day Training')
     
     parser.add_argument('--data-dir', type=str, 
-                        default='/data/bridge_sensor/100_days',
+                        default='/data/pool/c8x-98x/bridge_data/100_days',
                         help='Directory containing CSV files')
     
     parser.add_argument('--n-days', type=int, default=5,
@@ -44,13 +44,13 @@ def parse_args():
     parser.add_argument('--file-list', type=str, nargs='+', default=None,
                         help='Specific files to process')
     
-    parser.add_argument('--output-dir', type=str, default='phase2_results',
+    parser.add_argument('--output-dir', type=str, default='src/phase2_results',
                         help='Output directory for results')
     
     parser.add_argument('--quick', action='store_true',
                         help='Quick test mode (fewer epochs)')
     
-    parser.add_argument('--skip-exploration', action='store_true',
+    parser.add_argument('--skip-exploration', action='store_false',
                         help='Skip data exploration phase')
     
     parser.add_argument('--reuse-processed', action='store_true',
@@ -60,17 +60,7 @@ def parse_args():
 
 
 def find_csv_files(data_dir: Path, n_days: int, start_date: str = None) -> list:
-    """
-    Find CSV files to process.
-    
-    Args:
-        data_dir: Directory containing CSV files
-        n_days: Number of days to find
-        start_date: Optional starting date (YYYYMMDD)
-        
-    Returns:
-        List of Path objects for CSV files
-    """
+   
     data_dir = Path(data_dir)
     
     if not data_dir.exists():
@@ -92,7 +82,7 @@ def find_csv_files(data_dir: Path, n_days: int, start_date: str = None) -> list:
     # Select first n_days files
     selected_files = all_files[:n_days]
     
-    print(f"\n✅ Selected {len(selected_files)} files for Phase 2:")
+    print(f"\n Selected {len(selected_files)} files for Phase 2:")
     for i, f in enumerate(selected_files, 1):
         print(f"   {i}. {f.name}")
     
@@ -100,16 +90,7 @@ def find_csv_files(data_dir: Path, n_days: int, start_date: str = None) -> list:
 
 
 def load_multiple_days(file_list: list, skip_exploration: bool = False) -> dict:
-    """
-    Load and explore multiple days of data.
-    
-    Args:
-        file_list: List of CSV file paths
-        skip_exploration: Skip detailed exploration
-        
-    Returns:
-        Dictionary with combined data and per-day info
-    """
+   
     print("\n" + "="*80)
     print("PHASE 2: LOADING MULTIPLE DAYS")
     print("="*80)
@@ -123,12 +104,21 @@ def load_multiple_days(file_list: list, skip_exploration: bool = False) -> dict:
         try:
             # Load CSV
             df = load_single_csv(csv_file)
-            
+            df = df.drop(columns=['day', 'hour_file', 'start_time', 'end_time', 'variance'])
             # Quick stats
+            
             print(f"   Records: {len(df):,}")
             print(f"   Duration: {len(df) / 86400:.2f} days")
             print(f"   Features: {list(df.columns)}")
+            print(f"   Missing_data: {(df.isna().sum())}")
+            print(f'   the max values: {(df.max())}')
+            print(f'   the min values: {(df.min())}')
             
+            if df.isna().any().any():
+                missing_percent = df.isna().mean().mean() * 100
+                print('****There are missing data in this file and the percentage is:', missing_percent)
+                print(f'therfore skipping this file:', {csv_file})
+                continue
             # Store info
             day_info.append({
                 'file': str(csv_file),
@@ -138,15 +128,19 @@ def load_multiple_days(file_list: list, skip_exploration: bool = False) -> dict:
                 'end_idx': sum(d['n_records'] for d in day_info) + len(df)
             })
             
+
+
             all_data.append(df)
             
             # Detailed exploration for first file only
             if i == 1 and not skip_exploration:
                 print(f"\n📊 Detailed statistics for first file:")
                 stats = explore_data(df, show_plots=False)
+
+            
                 
         except Exception as e:
-            print(f"   ❌ Error loading {csv_file.name}: {e}")
+            print(f"    Error loading {csv_file.name}: {e}")
             raise
     
     # Combine all dataframes
@@ -154,7 +148,9 @@ def load_multiple_days(file_list: list, skip_exploration: bool = False) -> dict:
     import pandas as pd
     combined_df = pd.concat(all_data, ignore_index=True)
     
-    print(f"\n✅ Combined Dataset:")
+    print(f"\n Combined Dataset:")
+    print(f'   the max values: {(combined_df.max())}')
+    print(f'   the min values: {(combined_df.min())}')
     print(f"   Total records: {len(combined_df):,}")
     print(f"   Total duration: {len(combined_df) / 86400:.2f} days")
     print(f"   Size in memory: {combined_df.memory_usage(deep=True).sum() / 1e6:.2f} MB")
@@ -167,16 +163,7 @@ def load_multiple_days(file_list: list, skip_exploration: bool = False) -> dict:
 
 
 def preprocess_multi_day(data_dict: dict, output_dir: Path) -> Path:
-    """
-    Preprocess multi-day dataset using existing DataPreprocessor.
     
-    Args:
-        data_dict: Dictionary from load_multiple_days()
-        output_dir: Output directory
-        
-    Returns:
-        Path to processed .npz file
-    """
     print("\n" + "="*80)
     print("PHASE 2: PREPROCESSING MULTI-DAY DATA")
     print("="*80)
@@ -186,10 +173,13 @@ def preprocess_multi_day(data_dict: dict, output_dir: Path) -> Path:
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     
+    
     # Create filename based on date range
     first_date = data_dict['day_info'][0]['date']
     last_date = data_dict['day_info'][-1]['date']
     n_days = data_dict['n_days']
+
+    output_dir = output_dir / 'processed'
     
     output_file = output_dir / f"phase2_{first_date}_to_{last_date}_{n_days}days_processed.npz"
     
@@ -209,7 +199,7 @@ def preprocess_multi_day(data_dict: dict, output_dir: Path) -> Path:
     preprocessor = DataPreprocessor()
     
     # Handle missing values
-    features = preprocessor.handle_missing_values(features, method='interpolate')
+    #features = preprocessor.handle_missing_values(features, method='interpolate')
     
     # Normalize (fit on ALL multi-day data)
     features_normalized = preprocessor.normalize(features, fit=True)
@@ -239,7 +229,7 @@ def preprocess_multi_day(data_dict: dict, output_dir: Path) -> Path:
     print(f"\n💾 Saved processed data to: {output_file}")
     
     # Save scaler
-    scaler_file = output_dir / f"phase2_{first_date}_to_{last_date}_{n_days}days_scaler.pkl"
+    scaler_file = output_dir/ f"phase2_{first_date}_to_{last_date}_{n_days}days_scaler.pkl"
     preprocessor.save_scaler(scaler_file)
     
     # Save day boundaries for later analysis
@@ -247,7 +237,7 @@ def preprocess_multi_day(data_dict: dict, output_dir: Path) -> Path:
     with open(day_boundaries_file, 'w') as f:
         json.dump(data_dict['day_info'], f, indent=2)
     
-    print(f"✅ Saved day boundaries to: {day_boundaries_file}")
+    print(f" Saved day boundaries to: {day_boundaries_file}")
     
     return output_file
 
@@ -291,7 +281,7 @@ def train_phase2_model(processed_file: Path, output_dir: Path, quick: bool = Fal
         print(f"\n⚡ Quick mode: {epochs} epochs")
     else:
         epochs = config.EPOCHS
-        print(f"\n🔄 Full training: {epochs} epochs")
+        print(f"\n Full training: {epochs} epochs")
     
     # Train
     trainer = Trainer(
@@ -313,15 +303,6 @@ def evaluate_phase2(checkpoint_path: Path,
                      processed_file: Path,
                      boundaries_file: Path,
                      output_dir: Path):
-    """
-    Evaluate Phase 2 model with per-day analysis.
-    
-    Args:
-        checkpoint_path: Path to model checkpoint
-        processed_file: Path to processed .npz file
-        boundaries_file: Path to day boundaries JSON
-        output_dir: Output directory for results
-    """
     print("\n" + "="*80)
     print("PHASE 2: EVALUATION WITH PER-DAY ANALYSIS")
     print("="*80)
@@ -339,17 +320,17 @@ def evaluate_phase2(checkpoint_path: Path,
     checkpoint = torch.load(checkpoint_path, map_location=config.DEVICE)
     model.load_state_dict(checkpoint['model_state_dict'])
     
-    print(f"\n✅ Loaded model from: {checkpoint_path}")
+    print(f"\n Loaded model from: {checkpoint_path}")
     print(f"   Training epoch: {checkpoint['epoch']}")
     print(f"   Validation loss: {checkpoint['val_loss']:.6f}")
     
     # Overall evaluation
-    print(f"\n🔍 Evaluating on test set...")
+    print(f"\n Evaluating on test set...")
     test_originals, test_reconstructions, test_latents = evaluate_model(
         model, test_loader, config.DEVICE
     )
     
-    print(f"\n📊 Comparison Mode: Using absolute values")
+    print(f"\n Comparison Mode: Using absolute values")
     print(f"   Originals will be converted to abs() before comparison")
     print(f"   This matches the preprocessing in load_data.py")
     
@@ -485,7 +466,7 @@ def main():
         print(f"  3. If R² > 0.85, ready for Phase 3!")
         
     except Exception as e:
-        print(f"\n❌ Error in Phase 2 pipeline: {e}")
+        print(f"\n Error in Phase 2 pipeline: {e}")
         import traceback
         traceback.print_exc()
         sys.exit(1)
