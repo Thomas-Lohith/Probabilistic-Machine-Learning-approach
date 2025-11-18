@@ -34,7 +34,7 @@ class Trainer:
         self.epochs = epochs if epochs else config.EPOCHS
         
         # Loss function
-        self.criterion = nn.L1Loss()    #nn.MSELoss()
+        self.criterion = nn.MSELoss()    #nn.MSELoss()
         
         # Optimizer
         if learning_rate is None:

@@ -4,7 +4,7 @@ import pandas as pd
 from pathlib import Path
 from typing import Tuple, Optional
 import pickle
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from sklearn.model_selection import train_test_split
 
 from config import config

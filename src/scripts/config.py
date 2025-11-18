@@ -1,7 +1,3 @@
-"""
-Configuration file for Bridge Accelerometer Data Compression
-"""
-
 import torch
 from pathlib import Path
 
@@ -40,7 +36,7 @@ class Config:
     
     # Time specifications
     SECONDS_PER_DAY = 86400
-    SEQUENCE_LENGTH = 60  # 60 seconds per sequence
+    SEQUENCE_LENGTH = 90  # 60 seconds per sequence
     N_FEATURES = 2  # mean, variance, log_variance
     
     # Data split ratios
@@ -52,14 +48,14 @@ class Config:
     # Model Architecture
     # ============================================
     # LSTM Encoder
-    ENCODER_HIDDEN_DIMS = [128, 64, 32]  # LSTM layers (will be doubled due to bidirectional)
+    ENCODER_HIDDEN_DIMS = [64, 32]  # LSTM layers (will be doubled due to bidirectional)
     ENCODER_BIDIRECTIONAL = True
     
     # Latent space
     LATENT_DIM = 32  # Compression bottleneck
     
     # LSTM Decoder
-    DECODER_HIDDEN_DIMS = [32, 64, 128]
+    DECODER_HIDDEN_DIMS = [32, 64]
     
     # Regularization
     DROPOUT = 0.2
@@ -100,7 +96,7 @@ class Config:
     
     # Checkpointing
     SAVE_EVERY_N_EPOCHS = 25
-    PATIENCE = 10  # Early stopping patience
+    PATIENCE = 30  # Early stopping patience
     
     # Logging
     LOG_EVERY_N_STEPS = 50

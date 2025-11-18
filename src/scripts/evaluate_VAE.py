@@ -1,351 +1,298 @@
 """
-Evaluation script for LSTM Variational Autoencoder (VAE)
-
-This is parallel to evaluate.py but for VAE model
+VAE Evaluation Module
+Based on working evaluate.py, modified for Variational Autoencoder
 """
 
 import torch
+import torch.nn.functional as F
 import numpy as np
+from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 from pathlib import Path
-from typing import Dict, Tuple
-import matplotlib.pyplot as plt
-import seaborn as sns
-from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error, explained_variance_score
 
 from config import config
-from VAE import LSTMVariationalAutoencoder, vae_loss_function
-from utils import set_seed
 
 
-def load_vae_model(checkpoint_path: str, device: str = None) -> LSTMVariationalAutoencoder:
+def evaluate_vae(model, test_data, kl_weight=1.0, use_abs=True):
+    """
+    Evaluate VAE model on test data.
+    
+    Args:
+        model: Trained LSTMVAE model
+        test_data: Test data tensor (n_samples, seq_length, features)
+        kl_weight: KL weight used during training
+        use_abs: Use absolute values for R² calculation
+        
+    Returns:
+        Dictionary of metrics
+    """
+    model.eval()
+    device = next(model.parameters()).device
+    
+    with torch.no_grad():
+        # Move data to device
+        if isinstance(test_data, np.ndarray):
+            test_data = torch.FloatTensor(test_data)
+        test_data = test_data.to(device)
+        
+        # Forward pass
+        reconstructed, mu, log_var = model(test_data)
+        
+        # Move to CPU for metric calculation
+        original = test_data.cpu().numpy()
+        recon = reconstructed.cpu().numpy()
+        mu_np = mu.cpu().numpy()
+        log_var_np = log_var.cpu().numpy()
+        
+        # Flatten for metrics
+        original_flat = original.reshape(-1, original.shape[-1])
+        recon_flat = recon.reshape(-1, recon.shape[-1])
+        
+        # Basic metrics (same as AE)
+        mse = mean_squared_error(original_flat, recon_flat)
+        rmse = np.sqrt(mse)
+        mae = mean_absolute_error(original_flat, recon_flat)
+        
+        # R² score
+        if use_abs:
+            r2 = r2_score(np.abs(original_flat), np.abs(recon_flat))
+        else:
+            r2 = r2_score(original_flat, recon_flat)
+        
+        # Per-feature metrics
+        n_features = original.shape[-1]
+        per_feature_metrics = {}
+        
+        for feat_idx in range(n_features):
+            feat_original = original[:, :, feat_idx].flatten()
+            feat_recon = recon[:, :, feat_idx].flatten()
+            
+            feat_mse = mean_squared_error(feat_original, feat_recon)
+            feat_rmse = np.sqrt(feat_mse)
+            feat_mae = mean_absolute_error(feat_original, feat_recon)
+            
+            if use_abs:
+                feat_r2 = r2_score(np.abs(feat_original), np.abs(feat_recon))
+            else:
+                feat_r2 = r2_score(feat_original, feat_recon)
+            
+            per_feature_metrics[f'feature_{feat_idx}'] = {
+                'mse': float(feat_mse),
+                'rmse': float(feat_rmse),
+                'mae': float(feat_mae),
+                'r2': float(feat_r2)
+            }
+        
+        # VAE-specific metrics
+        # KL divergence
+        kl_divergence = -0.5 * np.sum(1 + log_var_np - mu_np**2 - np.exp(log_var_np))
+        kl_divergence = kl_divergence / mu_np.shape[0]  # Normalize by batch size
+        
+        # Reconstruction loss (same as used in training)
+        recon_loss = float(F.mse_loss(reconstructed, test_data, reduction='mean').item())
+        
+        # Total VAE loss (ELBO)
+        total_loss = recon_loss + kl_weight * kl_divergence
+        
+        # Latent space statistics
+        latent_mean = np.mean(mu_np, axis=0)
+        latent_std = np.std(mu_np, axis=0)
+        latent_var_mean = np.mean(np.exp(log_var_np), axis=0)
+        
+        # Compile metrics
+        metrics = {
+            # Basic metrics
+            'mse': float(mse),
+            'rmse': float(rmse),
+            'mae': float(mae),
+            'r2': float(r2),
+            
+            # VAE-specific metrics
+            'kl_divergence': float(kl_divergence),
+            'recon_loss': float(recon_loss),
+            'total_loss': float(total_loss),
+            
+            # Latent space statistics
+            'latent_mean': latent_mean.tolist(),
+            'latent_std': latent_std.tolist(),
+            'latent_var_mean': latent_var_mean.tolist(),
+            
+            # Per-feature metrics
+            'per_feature': per_feature_metrics
+        }
+        
+        return metrics
 
-    if device is None:
-        device = config.DEVICE
+
+def print_vae_metrics(metrics):
+    """
+    Print VAE evaluation metrics in a formatted way.
     
-    print(f"\nLoading VAE model from: {checkpoint_path}")
+    Args:
+        metrics: Dictionary of metrics from evaluate_vae()
+    """
+    print("\n" + "="*80)
+    print("VAE EVALUATION METRICS")
+    print("="*80)
     
-    checkpoint = torch.load(checkpoint_path, map_location=device)
+    # Overall metrics
+    print("\n📊 Overall Metrics:")
+    print(f"   RMSE:           {metrics['rmse']:.6f}")
+    print(f"   MAE:            {metrics['mae']:.6f}")
+    print(f"   R² Score:       {metrics['r2']:.6f}")
+    print(f"   MSE:            {metrics['mse']:.6f}")
     
-    # Create model with saved config
-    model_config = checkpoint.get('config', {})
-    model = LSTMVariationalAutoencoder(
-        input_dim=model_config.get('input_dim', config.N_FEATURES),
-        latent_dim=model_config.get('latent_dim', config.LATENT_DIM),
-        output_dim=model_config.get('output_dim', config.N_FEATURES),
-        seq_length=model_config.get('seq_length', config.SEQUENCE_LENGTH)
-    )
+    # VAE-specific metrics
+    print("\n🔬 VAE Metrics:")
+    print(f"   Reconstruction Loss:  {metrics['recon_loss']:.6f}")
+    print(f"   KL Divergence:        {metrics['kl_divergence']:.6f}")
+    print(f"   Total Loss (ELBO):    {metrics['total_loss']:.6f}")
     
-    # Load weights
+    # KL divergence interpretation
+    kl = metrics['kl_divergence']
+    print(f"\n💡 KL Divergence Interpretation:")
+    if kl < 1.0:
+        print(f"   ⚠️  Very low ({kl:.3f}) - possible posterior collapse")
+        print(f"      Model may not be using latent space effectively")
+    elif kl < 5.0:
+        print(f"   ✅ Good range ({kl:.3f}) - healthy latent space")
+    elif kl < 10.0:
+        print(f"   ⚠️  Slightly high ({kl:.3f}) - may need tuning")
+    else:
+        print(f"   ❌ Too high ({kl:.3f}) - model struggling")
+    
+    # Latent space statistics
+    print(f"\n🎯 Latent Space Statistics:")
+    latent_mean = np.array(metrics['latent_mean'])
+    latent_std = np.array(metrics['latent_std'])
+    print(f"   Mean (μ):     {latent_mean.mean():.4f} ± {latent_mean.std():.4f}")
+    print(f"   Std (σ):      {latent_std.mean():.4f} ± {latent_std.std():.4f}")
+    
+    # Per-feature metrics
+    if 'per_feature' in metrics:
+        print(f"\n📈 Per-Feature Metrics:")
+        for feat_name, feat_metrics in metrics['per_feature'].items():
+            print(f"\n   {feat_name}:")
+            print(f"      RMSE: {feat_metrics['rmse']:.6f}")
+            print(f"      MAE:  {feat_metrics['mae']:.6f}")
+            print(f"      R²:   {feat_metrics['r2']:.6f}")
+    
+    print("\n" + "="*80)
+
+
+def load_vae_model(checkpoint_path):
+    """
+    Load trained VAE model from checkpoint.
+    
+    Args:
+        checkpoint_path: Path to checkpoint file
+        
+    Returns:
+        Loaded model
+    """
+    from model_vae import create_vae_model
+    
+    checkpoint_path = Path(checkpoint_path)
+    
+    if not checkpoint_path.exists():
+        raise FileNotFoundError(f"Checkpoint not found: {checkpoint_path}")
+    
+    # Create model
+    model = create_vae_model()
+    
+    # Load checkpoint
+    checkpoint = torch.load(checkpoint_path, map_location=config.DEVICE)
     model.load_state_dict(checkpoint['model_state_dict'])
-    model = model.to(device)
+    
+    # Set to eval mode
     model.eval()
     
-    print(f" Model loaded from epoch {checkpoint['epoch']}")
-    print(f"   Best val loss: {checkpoint['best_val_loss']:.6f}")
+    print(f"✅ Loaded VAE model from: {checkpoint_path}")
+    print(f"   Epoch: {checkpoint.get('epoch', 'unknown')}")
+    print(f"   Val Loss: {checkpoint.get('val_loss', 'unknown')}")
+    print(f"   KL Weight: {checkpoint.get('kl_weight', 'unknown')}")
     
     return model
 
 
-@torch.no_grad()
-def evaluate_vae(model: LSTMVariationalAutoencoder,
-                 X_test: torch.Tensor,
-                 device: str = None,
-                 kl_weight: float = 1.0,
-                 use_abs: bool = True) -> Dict:
-
-    if device is None:
-        device = config.DEVICE
+def evaluate_vae_phase1(checkpoint_path, processed_file, output_dir, kl_weight=1.0):
+    """
+    Evaluate VAE for Phase 1 (single day).
     
-    model.eval()
-    X_test = X_test.to(device)
-    
-    print("\n🔍 Evaluating VAE model...")
-    print(f"Test data shape: {X_test.shape}")
-    
-    # Forward pass
-    reconstructed, mu, log_var = model(X_test)
-    
-    # Calculate VAE loss
-    total_loss, loss_dict = vae_loss_function(
-        reconstructed, X_test, mu, log_var, kl_weight=kl_weight
-    )
-    
-    # Convert to numpy for metric calculation
-    y_true = X_test.cpu().numpy()
-    y_pred = reconstructed.cpu().numpy()
-    mu_np = mu.cpu().numpy()
-    log_var_np = log_var.cpu().numpy()
-    
-    # Apply absolute value if requested (for consistency with preprocessing)
-    if use_abs:
-        y_true = np.abs(y_true)
-        y_pred = np.abs(y_pred)
-    
-    # Flatten for metrics
-    y_true_flat = y_true.reshape(-1)
-    y_pred_flat = y_pred.reshape(-1)
-    
-    # Calculate reconstruction metrics
-    mse = mean_squared_error(y_true_flat, y_pred_flat)
-    rmse = np.sqrt(mse)
-    mae = mean_absolute_error(y_true_flat, y_pred_flat)
-    r2 = r2_score(y_true_flat, y_pred_flat)
-    ev = explained_variance_score(y_true_flat, y_pred_flat)
-    
-    # Latent space statistics
-    latent_stats = {
-        'mu_mean': np.mean(mu_np),
-        'mu_std': np.std(mu_np),
-        'log_var_mean': np.mean(log_var_np),
-        'log_var_std': np.std(log_var_np),
-        'sigma_mean': np.mean(np.exp(0.5 * log_var_np)),  # std = exp(0.5 * log_var)
-    }
-    
-    metrics = {
-        # VAE losses
-        'total_loss': loss_dict['total_loss'],
-        'mse_loss': loss_dict['mse_loss'],
-        'kl_divergence': loss_dict['kl_divergence'],
-        'weighted_kl': loss_dict['weighted_kl'],
+    Args:
+        checkpoint_path: Path to model checkpoint
+        processed_file: Path to processed data
+        output_dir: Directory to save results
+        kl_weight: KL weight used during training
         
-        # Reconstruction metrics
-        'mse': mse,
-        'rmse': rmse,
-        'mae': mae,
-        'r2': r2,
-        'explained_variance': ev,
-        
-        # Latent space statistics
-        'latent_stats': latent_stats
-    }
+    Returns:
+        Dictionary of metrics
+    """
+    import json
+    from dataset import load_processed_data
+    from evaluate import plot_reconstruction_samples, plot_latent_space
     
-    return metrics
-
-
-def print_vae_metrics(metrics: Dict):
-    """Print VAE evaluation metrics in a formatted way."""
-    print("\n" + "="*60)
-    print("VAE EVALUATION METRICS")
-    print("="*60)
-    
-    print("\n Loss Components:")
-    print(f"  Total Loss:       {metrics['total_loss']:.6f}")
-    print(f"  MSE Loss:         {metrics['mse_loss']:.6f}")
-    print(f"  KL Divergence:    {metrics['kl_divergence']:.6f}")
-    print(f"  Weighted KL:      {metrics['weighted_kl']:.6f}")
-    
-    print("\n Reconstruction Quality:")
-    print(f"  MSE:              {metrics['mse']:.6f}")
-    print(f"  RMSE:             {metrics['rmse']:.6f}")
-    print(f"  MAE:              {metrics['mae']:.6f}")
-    print(f"  R² Score:         {metrics['r2']:.6f}")
-    print(f"  Explained Var:    {metrics['explained_variance']:.6f}")
-    
-    # R² interpretation
-    r2 = metrics['r2']
-    if r2 >= 0.95:
-        print(f"  Quality:          ⭐⭐⭐ EXCELLENT")
-    elif r2 >= 0.92:
-        print(f"  Quality:          ⭐⭐ GOOD")
-    elif r2 >= 0.85:
-        print(f"  Quality:          ⭐ ACCEPTABLE")
-    elif r2 >= 0.0:
-        print(f"  Quality:          ⚠️  POOR")
-    else:
-        print(f"  Quality:          ❌ BROKEN (Negative R²)")
-    
-    print("\n🎲 Latent Space Statistics:")
-    ls = metrics['latent_stats']
-    print(f"  μ (mean):         {ls['mu_mean']:.6f} ± {ls['mu_std']:.6f}")
-    print(f"  log(σ²) (mean):   {ls['log_var_mean']:.6f} ± {ls['log_var_std']:.6f}")
-    print(f"  σ (mean):         {ls['sigma_mean']:.6f}")
-    
-    print("\n💡 Interpretation:")
-    print("  - MSE Loss: Reconstruction error (lower is better)")
-    print("  - KL Divergence: How far latent distribution is from N(0,1)")
-    print("  - Low KL: Model uses latent space effectively")
-    print("  - High KL: Model may ignore latent space (posterior collapse)")
-    
-    print("="*60 + "\n")
-
-
-def visualize_vae_latent_space(model: LSTMVariationalAutoencoder,
-                                X_test: torch.Tensor,
-                                save_path: Path = None,
-                                device: str = None):
- 
-    if device is None:
-        device = config.DEVICE
-    
-    model.eval()
-    X_test = X_test.to(device)
-    
-    # Encode to get mu and log_var
-    with torch.no_grad():
-        mu, log_var = model.encoder(X_test)
-        sigma = torch.exp(0.5 * log_var)
-    
-    mu_np = mu.cpu().numpy()
-    sigma_np = sigma.cpu().numpy()
-    
-    # Create figure
-    fig, axes = plt.subplots(2, 2, figsize=(12, 10))
-    fig.suptitle('VAE Latent Space Analysis', fontsize=16)
-    
-    # Plot 1: Distribution of mu (first 2 dimensions)
-    ax = axes[0, 0]
-    if mu_np.shape[1] >= 2:
-        ax.scatter(mu_np[:, 0], mu_np[:, 1], alpha=0.5, s=10)
-        ax.set_xlabel('Latent Dim 0 (μ)')
-        ax.set_ylabel('Latent Dim 1 (μ)')
-        ax.set_title('Latent Space (μ) - First 2 Dimensions')
-        ax.grid(True, alpha=0.3)
-    else:
-        ax.text(0.5, 0.5, 'Need at least 2 latent dims', ha='center', va='center')
-    
-    # Plot 2: Distribution of sigma (first 2 dimensions)
-    ax = axes[0, 1]
-    if sigma_np.shape[1] >= 2:
-        scatter = ax.scatter(sigma_np[:, 0], sigma_np[:, 1], 
-                           c=np.arange(len(sigma_np)), cmap='viridis', 
-                           alpha=0.5, s=10)
-        ax.set_xlabel('Latent Dim 0 (σ)')
-        ax.set_ylabel('Latent Dim 1 (σ)')
-        ax.set_title('Latent Space (σ) - First 2 Dimensions')
-        ax.grid(True, alpha=0.3)
-        plt.colorbar(scatter, ax=ax, label='Sample Index')
-    else:
-        ax.text(0.5, 0.5, 'Need at least 2 latent dims', ha='center', va='center')
-    
-    # Plot 3: Histogram of mu values
-    ax = axes[1, 0]
-    ax.hist(mu_np.flatten(), bins=50, alpha=0.7, edgecolor='black')
-    ax.axvline(0, color='red', linestyle='--', linewidth=2, label='N(0,1) mean')
-    ax.set_xlabel('μ values')
-    ax.set_ylabel('Frequency')
-    ax.set_title('Distribution of μ (should be centered at 0)')
-    ax.legend()
-    ax.grid(True, alpha=0.3)
-    
-    # Plot 4: Histogram of sigma values
-    ax = axes[1, 1]
-    ax.hist(sigma_np.flatten(), bins=50, alpha=0.7, edgecolor='black')
-    ax.axvline(1, color='red', linestyle='--', linewidth=2, label='N(0,1) std')
-    ax.set_xlabel('σ values')
-    ax.set_ylabel('Frequency')
-    ax.set_title('Distribution of σ (should be centered at 1)')
-    ax.legend()
-    ax.grid(True, alpha=0.3)
-    
-    plt.tight_layout()
-    
-    if save_path:
-        plt.savefig(save_path, dpi=300, bbox_inches='tight')
-        print(f" Latent space visualization saved: {save_path}")
-    
-    plt.close()
-
-
-def compare_ae_vs_vae(ae_metrics: Dict, vae_metrics: Dict):
-  
-    print("\n" + "="*60)
-    print("AUTOENCODER vs VAE COMPARISON")
-    print("="*60)
-    
-    print("\n📊 Reconstruction Quality:")
-    print(f"{'Metric':<20} {'Autoencoder':<15} {'VAE':<15} {'Winner':<10}")
-    print("-" * 60)
-    
-    metrics_to_compare = ['r2', 'mse', 'rmse', 'mae']
-    
-    for metric in metrics_to_compare:
-        ae_val = ae_metrics.get(metric, 0)
-        vae_val = vae_metrics.get(metric, 0)
-        
-        # For R², higher is better. For others, lower is better
-        if metric == 'r2':
-            winner = "AE" if ae_val > vae_val else "VAE"
-            symbol = "🏆" if winner == "VAE" else ""
-        else:
-            winner = "AE" if ae_val < vae_val else "VAE"
-            symbol = "🏆" if winner == "VAE" else ""
-        
-        print(f"{metric.upper():<20} {ae_val:<15.6f} {vae_val:<15.6f} {winner:<10} {symbol}")
-    
-    print("\n💡 Key Differences:")
-    print("  ✅ Autoencoder: Deterministic, direct compression")
-    print("  ✅ VAE: Probabilistic, learns distribution, regularized latent space")
-    print("  ✅ VAE typically has slightly worse reconstruction (due to regularization)")
-    print("  ✅ VAE has better latent space structure (good for generation/interpolation)")
-    
-    print("="*60 + "\n")
-
-
-def evaluate_vae_phase1(checkpoint_path: str = None,
-                        data_path: str = None,
-                        kl_weight: float = 1.0,
-                        save_visualizations: bool = True):
-
-    set_seed(42)
-    
-    # Paths
-    if checkpoint_path is None:
-        checkpoint_path = config.CHECKPOINT_DIR / "vae_best_model.pt"
-    if data_path is None:
-        data_path = config.PROCESSED_DATA_DIR / "processed_data.npz"
+    print("\n" + "="*80)
+    print("PHASE 1 VAE EVALUATION")
+    print("="*80)
     
     # Load model
     model = load_vae_model(checkpoint_path)
     
     # Load test data
-    print(f"\n Loading test data from: {data_path}")
-    data = np.load(data_path)
-    X_test = torch.FloatTensor(data['X_test'])
-    print(f"Test shape: {X_test.shape}")
+    _, _, test_data = load_processed_data(processed_file)
+    test_data = torch.FloatTensor(test_data)
+    
+    print(f"\nTest data shape: {test_data.shape}")
     
     # Evaluate
-    metrics = evaluate_vae(model, X_test, kl_weight=kl_weight, use_abs=True)
+    metrics = evaluate_vae(model, test_data, kl_weight=kl_weight, use_abs=True)
     
     # Print metrics
     print_vae_metrics(metrics)
     
-    # Save visualizations
-    if save_visualizations:
-        vis_dir = config.FIGURES_DIR / "vae"
-        vis_dir.mkdir(parents=True, exist_ok=True)
+    # Get reconstructions and latent for visualization
+    model.eval()
+    with torch.no_grad():
+        test_data_device = test_data.to(config.DEVICE)
+        reconstructed, mu, log_var = model(test_data_device)
         
-        # Latent space visualization
-        latent_path = vis_dir / "vae_latent_space.png"
-        visualize_vae_latent_space(model, X_test, latent_path)
+        test_originals = test_data.cpu().numpy()
+        test_reconstructions = reconstructed.cpu().numpy()
+        test_latents = mu.cpu().numpy()
+    
+    # Create visualizations
+    print(f"\n📊 Creating visualizations...")
+    results_dir = Path(output_dir)
+    results_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Plot reconstruction samples
+    plot_reconstruction_samples(
+        test_originals,
+        test_reconstructions,
+        n_samples=5,
+        save_path=results_dir / "vae_reconstruction_samples.png",
+        use_abs=True
+    )
+    print(f"   ✅ Reconstruction samples saved")
+    
+    # Plot latent space
+    plot_latent_space(
+        test_latents,
+        save_path=results_dir / "vae_latent_space.png"
+    )
+    print(f"   ✅ Latent space plot saved")
     
     # Save metrics
-    metrics_path = config.METRICS_DIR / "vae_test_metrics.json"
-    metrics_path.parent.mkdir(parents=True, exist_ok=True)
-    
-    import json
-    # Convert numpy types to Python types for JSON serialization
-    metrics_json = {}
-    for key, value in metrics.items():
-        if isinstance(value, dict):
-            metrics_json[key] = {k: float(v) for k, v in value.items()}
-        else:
-            metrics_json[key] = float(value)
-    
+    metrics_path = results_dir / "vae_test_metrics.json"
     with open(metrics_path, 'w') as f:
-        json.dump(metrics_json, f, indent=2)
+        json.dump(metrics, f, indent=2)
+    print(f"\n💾 Metrics saved: {metrics_path}")
     
-    print(f" Metrics saved: {metrics_path}")
+    print(f"\n✅ Results saved to: {results_dir}")
     
     return metrics
 
 
 if __name__ == "__main__":
-    print("Evaluating LSTM Variational Autoencoder (VAE)...")
-    
-    # Evaluate VAE
-    vae_metrics = evaluate_vae_phase1(
-        kl_weight=1.0,
-        save_visualizations=True
-    )
-    
-    print("\n VAE evaluation complete!")
+    print("VAE Evaluation Module")
+    print("Import this module and use evaluate_vae() or evaluate_vae_phase1()")

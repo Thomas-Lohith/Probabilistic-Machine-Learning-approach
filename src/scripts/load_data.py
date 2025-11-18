@@ -20,16 +20,23 @@ def load_single_csv(file_path: Path) -> pd.DataFrame:
     print(f"Loading: {file_path}")
     
     df = pd.read_csv(file_path)
+    df = df.drop(columns=['day', 'hour_file', 'start_time', 'end_time', 'variance'])
+
+    #decreasing the computational time
+    float64_cols = df.select_dtypes(include='float64').columns
+    df[float64_cols] = df[float64_cols].astype('float32')
+
     
+
     # Verify columns
     expected_cols = config.COLUMNS
     if list(df.columns) != expected_cols:
         print(f"Warning: Column mismatch!")
         print(f"Expected: {expected_cols}")
-        print(f"Got: {list(df.columns)}")
+        #print(f"Got: {list(df.columns)}")
     
     print(f"Shape: {df.shape}")
-    print(f"Columns: {df.columns.tolist()}")
+    #print(f"Columns: {df.columns.tolist()}")
 
     
     

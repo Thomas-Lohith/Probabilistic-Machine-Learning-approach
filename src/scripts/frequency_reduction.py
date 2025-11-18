@@ -5,12 +5,6 @@ import argparse
 from tqdm import tqdm
 
 def process_sensor_files(root_dir, sensor_name, output_dir, chunk_size=100):
-    """
-    Reduce frequency of sensor data by computing mean and variance every 'chunk_size' samples.
-    Applies log-normal transform on variance.
-    Saves one reduced CSV per day into the specified output directory.
-    """
-
     # Ensure output directory exists
     os.makedirs(output_dir, exist_ok=True)
 

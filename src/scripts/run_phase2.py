@@ -1,13 +1,3 @@
-"""
-Phase 2: Multi-Day Training and Evaluation
-
-Scale the autoencoder to handle multiple days of data (5-10 days).
-This script:
-1. Loads and preprocesses multiple CSV files
-2. Combines them into a larger dataset
-3. Trains a single model on all days
-4. Evaluates per-day performance
-"""
 
 import argparse
 import sys
@@ -44,7 +34,7 @@ def parse_args():
     parser.add_argument('--file-list', type=str, nargs='+', default=None,
                         help='Specific files to process')
     
-    parser.add_argument('--output-dir', type=str, default='src/phase2_results',
+    parser.add_argument('--output-dir', type=str, default='/data/pool/c8x-98x/pml/src/phase2_results',
                         help='Output directory for results')
     
     parser.add_argument('--quick', action='store_true',
@@ -97,6 +87,7 @@ def load_multiple_days(file_list: list, skip_exploration: bool = False) -> dict:
     
     all_data = []
     day_info = []
+    missing_info = []
     
     for i, csv_file in enumerate(file_list, 1):
         print(f"\n📂 Loading Day {i}/{len(file_list)}: {csv_file.name}")
@@ -104,15 +95,14 @@ def load_multiple_days(file_list: list, skip_exploration: bool = False) -> dict:
         try:
             # Load CSV
             df = load_single_csv(csv_file)
-            df = df.drop(columns=['day', 'hour_file', 'start_time', 'end_time', 'variance'])
             # Quick stats
             
             print(f"   Records: {len(df):,}")
             print(f"   Duration: {len(df) / 86400:.2f} days")
             print(f"   Features: {list(df.columns)}")
-            print(f"   Missing_data: {(df.isna().sum())}")
-            print(f'   the max values: {(df.max())}')
-            print(f'   the min values: {(df.min())}')
+            print(f"  \n Missing_data: {(df.isna().sum())}")
+            print(f' \n  the max values: {(df.max())}')
+            print(f' \n   the min values: {(df.min())}')
             
             if df.isna().any().any():
                 missing_percent = df.isna().mean().mean() * 100
@@ -129,7 +119,7 @@ def load_multiple_days(file_list: list, skip_exploration: bool = False) -> dict:
             })
             
 
-
+            missing_info.append(np.float16(missing_percent))
             all_data.append(df)
             
             # Detailed exploration for first file only
@@ -145,6 +135,8 @@ def load_multiple_days(file_list: list, skip_exploration: bool = False) -> dict:
     
     # Combine all dataframes
     print(f"\n🔗 Combining {len(all_data)} days...")
+    print('the missing percents of each day in the list:',)
+    print(*missing_info, sep=', ')
     import pandas as pd
     combined_df = pd.concat(all_data, ignore_index=True)
     
@@ -193,7 +185,7 @@ def preprocess_multi_day(data_dict: dict, output_dir: Path) -> Path:
     
     # Apply absolute values (matching load_data.py behavior)
     features = np.abs(features)
-    print(f"\n✅ Applied absolute values to features")
+    print(f"\n Applied absolute values to features")
     
     # Initialize preprocessor
     preprocessor = DataPreprocessor()
@@ -229,7 +221,7 @@ def preprocess_multi_day(data_dict: dict, output_dir: Path) -> Path:
     print(f"\n💾 Saved processed data to: {output_file}")
     
     # Save scaler
-    scaler_file = output_dir/ f"phase2_{first_date}_to_{last_date}_{n_days}days_scaler.pkl"
+    scaler_file = output_dir/ 'scaler.pkl'
     preprocessor.save_scaler(scaler_file)
     
     # Save day boundaries for later analysis
@@ -243,17 +235,7 @@ def preprocess_multi_day(data_dict: dict, output_dir: Path) -> Path:
 
 
 def train_phase2_model(processed_file: Path, output_dir: Path, quick: bool = False):
-    """
-    Train model on multi-day data.
-    
-    Args:
-        processed_file: Path to processed .npz file
-        output_dir: Output directory for checkpoints
-        quick: Use quick mode (fewer epochs)
-        
-    Returns:
-        Path to best checkpoint
-    """
+
     print("\n" + "="*80)
     print("PHASE 2: TRAINING ON MULTI-DAY DATA")
     print("="*80)
@@ -274,7 +256,7 @@ def train_phase2_model(processed_file: Path, output_dir: Path, quick: bool = Fal
     
     # Create model
     model = create_model()
-    
+    print(model)
     # Set epochs based on mode
     if quick:
         epochs = config.PHASE1_QUICK_EPOCHS
@@ -317,6 +299,7 @@ def evaluate_phase2(checkpoint_path: Path,
     
     # Load model
     model = create_model()
+    print(model)
     checkpoint = torch.load(checkpoint_path, map_location=config.DEVICE)
     model.load_state_dict(checkpoint['model_state_dict'])
     
@@ -380,7 +363,7 @@ def evaluate_phase2(checkpoint_path: Path,
     plot_reconstruction_samples(
         test_originals,
         test_reconstructions,
-        n_samples=5,
+        n_samples=8,
         save_path=results_dir / "reconstruction_samples.png",
         use_abs=True
     )
@@ -419,7 +402,7 @@ def main():
     try:
         # Step 1: Find and load files
         if args.file_list:
-            print(f"\n📋 Using provided file list ({len(args.file_list)} files)")
+            print(f"\n Using provided file list ({len(args.file_list)} files)")
             file_list = [Path(f) for f in args.file_list]
         else:
             file_list = find_csv_files(
