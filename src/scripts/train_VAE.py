@@ -18,7 +18,6 @@ from pathlib import Path
 import json
 from tqdm import tqdm
 import time
-
 from config import config
 
 

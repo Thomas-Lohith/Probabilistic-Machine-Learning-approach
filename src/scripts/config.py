@@ -58,7 +58,7 @@ class Config:
     DECODER_HIDDEN_DIMS = [32, 64]
     
     # Regularization
-    DROPOUT = 0.2
+    DROPOUT = 0.1
     
     # ============================================
     # Training Hyperparameters

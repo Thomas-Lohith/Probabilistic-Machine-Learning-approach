@@ -13,18 +13,7 @@ from config import config
 
 
 def evaluate_vae(model, test_data, kl_weight=1.0, use_abs=True):
-    """
-    Evaluate VAE model on test data.
-    
-    Args:
-        model: Trained LSTMVAE model
-        test_data: Test data tensor (n_samples, seq_length, features)
-        kl_weight: KL weight used during training
-        use_abs: Use absolute values for R² calculation
-        
-    Returns:
-        Dictionary of metrics
-    """
+
     model.eval()
     device = next(model.parameters()).device
     
@@ -84,7 +73,7 @@ def evaluate_vae(model, test_data, kl_weight=1.0, use_abs=True):
         
         # VAE-specific metrics
         # KL divergence
-        kl_divergence = -0.5 * np.sum(1 + log_var_np - mu_np**2 - np.exp(log_var_np))
+        kl_divergence = -0.5 * np.mean(1 + log_var_np - mu_np**2 - np.exp(log_var_np))
         kl_divergence = kl_divergence / mu_np.shape[0]  # Normalize by batch size
         
         # Reconstruction loss (same as used in training)
@@ -180,15 +169,7 @@ def print_vae_metrics(metrics):
 
 
 def load_vae_model(checkpoint_path):
-    """
-    Load trained VAE model from checkpoint.
-    
-    Args:
-        checkpoint_path: Path to checkpoint file
-        
-    Returns:
-        Loaded model
-    """
+
     from model_vae import create_vae_model
     
     checkpoint_path = Path(checkpoint_path)
