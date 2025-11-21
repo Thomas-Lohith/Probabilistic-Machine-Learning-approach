@@ -1,7 +1,3 @@
-"""
-VAE Evaluation Module
-Based on working evaluate.py, modified for Variational Autoencoder
-"""
 
 import torch
 import torch.nn.functional as F

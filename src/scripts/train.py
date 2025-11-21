@@ -174,9 +174,9 @@ class Trainer:
     
     def train(self, save_dir: Path = None):
         """Complete training loop."""
-        if save_dir is None:
-            save_dir = Path("/home/claude/checkpoints")
-        save_dir.mkdir(parents=True, exist_ok=True)
+        # if save_dir is None:
+        #     save_dir = Path("/home/claude/checkpoints")
+        # save_dir.mkdir(parents=True, exist_ok=True)
         
         print("\n" + "="*60)
         print("STARTING TRAINING")

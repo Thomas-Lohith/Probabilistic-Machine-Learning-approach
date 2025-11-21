@@ -1,12 +1,4 @@
-"""
-VAE Training Module - CORRECTED VERSION
-Based on working train.py, modified for Variational Autoencoder
 
-ERRORS FIXED:
-1. Line 117: Fixed enumerate() usage in train loop
-2. Lines 138, 160: Fixed gradient clipping config name inconsistency
-3. Line 186: Fixed data unpacking inconsistency in validation loop
-"""
 
 import torch
 import torch.nn as nn
@@ -190,7 +182,7 @@ class VAETrainer:
             'val_recon_loss': [],
             'val_kl_loss': [],
             'kl_weight': [],
-            'lr': []
+            'learning_rate': []
         }
         
         # Best model tracking
@@ -375,6 +367,7 @@ class VAETrainer:
             # Validate
             val_metrics = self.validate()
             
+
             # Update learning rate
             self.scheduler.step(val_metrics['total_loss'])
             
@@ -390,7 +383,7 @@ class VAETrainer:
             self.history['val_recon_loss'].append(val_metrics['recon_loss'])
             self.history['val_kl_loss'].append(val_metrics['kl_loss'])
             self.history['kl_weight'].append(self.current_kl_weight)
-            self.history['lr'].append(current_lr)
+            self.history['learning_rate'].append(current_lr)
             
             # Print epoch summary
             print(f"\nEpoch {epoch+1}/{self.epochs} - {epoch_time:.1f}s:")

@@ -1,12 +1,3 @@
-"""
-Phase 2: Multi-Day Pipeline - VAE Version - CORRECTED VERSION
-Based on working run_phase2.py, modified for Variational Autoencoder
-
-ERRORS FIXED:
-1. Line 151-153: Fixed undefined 'processed_file' variable before use
-2. Import paths clarified for all modules
-"""
-
 import argparse
 from pathlib import Path
 import numpy as np
@@ -121,18 +112,7 @@ def train_phase2_vae(processed_file, output_dir, quick_test=False,
 
 
 def evaluate_phase2_vae(checkpoint_path, processed_file, output_dir, kl_weight=1.0):
-    """
-    Evaluate VAE model on Phase 2 data.
-    
-    Args:
-        checkpoint_path: Path to best checkpoint
-        processed_file: Path to processed data
-        output_dir: Output directory for results
-        kl_weight: KL weight used during training
-        
-    Returns:
-        Dictionary of metrics
-    """
+
     print("\n" + "="*80)
     print("EVALUATION (PHASE 2 VAE)")
     print("="*80)
@@ -154,10 +134,10 @@ def evaluate_phase2_vae(checkpoint_path, processed_file, output_dir, kl_weight=1
     if scaler_file.exists():
         import joblib
         scaler = joblib.load(scaler_file)
-        print(f"✅ Loaded scaler: {scaler_file}")
+        print(f" Loaded scaler: {scaler_file}")
         print(f"   Scaler type: {type(scaler).__name__}")
     else:
-        print(f"⚠️  WARNING: Scaler not found: {scaler_file}")
+        print(f"  WARNING: Scaler not found: {scaler_file}")
         print("   Metrics will be on normalized scale")
     
     # Evaluate
@@ -238,7 +218,7 @@ def evaluate_phase2_vae(checkpoint_path, processed_file, output_dir, kl_weight=1
         save_path=results_dir / "vae_latent_space.png"
     )
     
-    print(f"\n✅ Visualizations saved to: {results_dir}")
+    print(f"\n Visualizations saved to: {results_dir}")
     
     # Save metrics
     metrics_path = output_dir / "vae_metrics.json"
@@ -373,3 +353,7 @@ def run_phase2_vae_pipeline(args):
 if __name__ == "__main__":
     args = parse_args()
     run_phase2_vae_pipeline(args)
+    #last experiment; 
+    # python3 run_phase2_VAE.py --n-days 100 --kl-weight 0.1 
+    #python3 run_phase2_VAE.py --n-days 100 --kl-weight 0.9 --no-kl-annealing
+    #python3 run_phase2_VAE.py --n-days 100 --kl-weight 1

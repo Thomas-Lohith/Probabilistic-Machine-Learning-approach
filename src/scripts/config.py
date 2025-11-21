@@ -57,14 +57,14 @@ class Config:
     # LSTM Decoder
     DECODER_HIDDEN_DIMS = [32, 64]
     
-    # Regularization
+    # Regularizationtop
     DROPOUT = 0.1
     
     # ============================================
     # Training Hyperparameters
     # ============================================
     # Basic training
-    BATCH_SIZE = 512 # Can increase to 512 on A100
+    BATCH_SIZE = 256 # Can increase to 512 on A100
     EPOCHS = 1000
     LEARNING_RATE = 1e-3
     WEIGHT_DECAY = 1e-5
@@ -96,7 +96,7 @@ class Config:
     
     # Checkpointing
     SAVE_EVERY_N_EPOCHS = 25
-    PATIENCE = 30  # Early stopping patience
+    PATIENCE = 20  # Early stopping patience
     
     # Logging
     LOG_EVERY_N_STEPS = 50

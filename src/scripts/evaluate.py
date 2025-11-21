@@ -210,7 +210,7 @@ def plot_training_history(history_file: Path, save_path: Path = None):
     
     # Plot 2: Learning Rate Schedule
     ax2 = axes[1]
-    if 'learning_rate' in history and history['learning_rate']:
+    if 'learning_rate' or 'lr' in history and history['learning_rate']:
         ax2.plot(epochs, history['learning_rate'], 'g-', linewidth=2)
         ax2.set_xlabel('Epoch', fontsize=12)
         ax2.set_ylabel('Learning Rate', fontsize=12)
