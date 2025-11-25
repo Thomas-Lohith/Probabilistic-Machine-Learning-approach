@@ -95,8 +95,8 @@ class Config:
     PIN_MEMORY = True
     
     # Checkpointing
-    SAVE_EVERY_N_EPOCHS = 25
-    PATIENCE = 20  # Early stopping patience
+    SAVE_EVERY_N_EPOCHS = 50
+    PATIENCE = 15  # Early stopping patience
     
     # Logging
     LOG_EVERY_N_STEPS = 50

@@ -88,6 +88,7 @@ def load_multiple_days(file_list: list, skip_exploration: bool = False) -> dict:
     all_data = []
     day_info = []
     missing_info = []
+    missing_numbers = []
     
     for i, csv_file in enumerate(file_list, 1):
         print(f"\n📂 Loading Day {i}/{len(file_list)}: {csv_file.name}")
@@ -100,12 +101,13 @@ def load_multiple_days(file_list: list, skip_exploration: bool = False) -> dict:
             print(f"   Records: {len(df):,}")
             print(f"   Duration: {len(df) / 86400:.2f} days")
             print(f"   Features: {list(df.columns)}")
-            print(f"  \n Missing_data: {(df.isna().sum())}")
-            print(f' \n  the max values: {(df.max())}')
-            print(f' \n   the min values: {(df.min())}')
+            print(f"   Missing_data: {(df.isna().sum())}")
+            print(f'   max values: {(df.max())}')
+            print(f'   min values: {(df.min())}')
             
-            if df.isna().any().any():
+            if df.isna().any().any(): 
                 missing_percent = df.isna().mean().mean() * 100
+                missing = df.isna().any().any()
                 print('****There are missing data in this file and the percentage is:', missing_percent)
                 print(f'therfore skipping this file:', {csv_file})
                 continue
@@ -118,7 +120,7 @@ def load_multiple_days(file_list: list, skip_exploration: bool = False) -> dict:
                 'end_idx': sum(d['n_records'] for d in day_info) + len(df)
             })
             
-
+            missing_numbers.append(missing)
             missing_info.append(np.float16(missing_percent))
             all_data.append(df)
             
@@ -135,11 +137,16 @@ def load_multiple_days(file_list: list, skip_exploration: bool = False) -> dict:
     
     # Combine all dataframes
     print(f"\n🔗 Combining {len(all_data)} days...")
+    print("="*80)
+    print('missing list:', *missing_numbers, sep=', ')
+    
     print('the missing percents of each day in the list:',)
     print(*missing_info, sep=', ')
+    
     import pandas as pd
     combined_df = pd.concat(all_data, ignore_index=True)
     
+    print("="*80)
     print(f"\n Combined Dataset:")
     print(f'   the max values: {(combined_df.max())}')
     print(f'   the min values: {(combined_df.min())}')

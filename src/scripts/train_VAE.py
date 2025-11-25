@@ -55,7 +55,7 @@ def vae_loss_function_corrected(reconstructed, original, mu, log_var,
         total_loss: scalar tensor
         loss_dict: dictionary with loss components for logging
     """
-    
+    weight_variance = 2.0
     # =========================================================================
     # FIX 1 & 2: WEIGHTED RECONSTRUCTION LOSS (addressing your variance issue)
     # =========================================================================
@@ -71,25 +71,28 @@ def vae_loss_function_corrected(reconstructed, original, mu, log_var,
     mse_var = F.mse_loss(var_pred, var_true, reduction='mean')
     
     # Weight variance higher to fix underestimation problem
-    recon_loss = mse_mean +  mse_var #optional weight_variance *mse_var
+    recon_loss = mse_mean +  weight_variance *mse_var #optional weight_variance *mse_varmse_var
     
     
-    # =========================================================================
-    # FIX 3 & 4: CORRECTED KL DIVERGENCE CALCULATION
-    # =========================================================================
-    # Clamp log_var for numerical stability (Fix 4)
-    log_var_clamped = torch.clamp(log_var, min=-20, max=20)
+    # # =========================================================================
+    # # FIX 3 & 4: CORRECTED KL DIVERGENCE CALCULATION
+    # # =========================================================================
+    # # Clamp log_var for numerical stability (Fix 4)
+    # log_var_clamped = torch.clamp(log_var, min=-20, max=20)
     
-    # KL(q(z|x) || p(z)) = -0.5 * sum(1 + log(sigma^2) - mu^2 - sigma^2)
-    # CRITICAL: Use torch.mean() instead of torch.sum() (Fix 1)
-    # This automatically averages over batch AND latent dimensions
-    kl_divergence = -0.5 * torch.mean(1 + log_var_clamped - mu.pow(2) - log_var_clamped.exp())
+    # # KL(q(z|x) || p(z)) = -0.5 * sum(1 + log(sigma^2) - mu^2 - sigma^2)
+    # # CRITICAL: Use torch.mean() instead of torch.sum() (Fix 1)
+    # # This automatically averages over batch AND latent dimensions
+    # kl_divergence = -0.5 * torch.mean(1 + log_var_clamped - mu.pow(2) - log_var_clamped.exp())
     
-    # Alternative (mathematically equivalent, but more explicit):
-    # kl_divergence = -0.5 * torch.sum(1 + log_var_clamped - mu.pow(2) - log_var_clamped.exp(), dim=1)
-    # kl_divergence = torch.mean(kl_divergence)
+    # # Alternative (mathematically equivalent, but more explicit):
+    # # kl_divergence = -0.5 * torch.sum(1 + log_var_clamped - mu.pow(2) - log_var_clamped.exp(), dim=1)
+    # # kl_divergence = torch.mean(kl_divergence)
     
+    kl_divergence = -0.5 * torch.mean(1 + log_var - mu.pow(2) - log_var.exp())
     
+    # Normalize by batch size
+    kl_divergence = kl_divergence / mu.size(0)
     # =========================================================================
     # TOTAL LOSS
     # =========================================================================
@@ -103,7 +106,7 @@ def vae_loss_function_corrected(reconstructed, original, mu, log_var,
         # Individual components
         'recon_loss_mean': mse_mean.item(),
         'recon_loss_var': mse_var.item(),
-        'recon_loss_total': recon_loss.item(),
+        'recon_loss': recon_loss.item(),
         'kl_divergence': kl_divergence.item(),
         
         # Weighted components
@@ -235,7 +238,7 @@ class VAETrainer:
                 # Mixed precision training
                 with autocast():
                     reconstructed, mu, log_var = self.model(data)
-                    loss, loss_dict = vae_loss_function(
+                    loss, loss_dict = vae_loss_function_corrected(
                         reconstructed, data, mu, log_var,
                         kl_weight=self.current_kl_weight
                     )
@@ -255,7 +258,7 @@ class VAETrainer:
             else:
                 # Normal training
                 reconstructed, mu, log_var = self.model(data)
-                loss, loss_dict = vae_loss_function(
+                loss, loss_dict = vae_loss_function_corrected(
                     reconstructed, data, mu, log_var,
                     kl_weight=self.current_kl_weight
                 )
@@ -317,7 +320,7 @@ class VAETrainer:
                 data = data.to(self.device)
                 
                 reconstructed, mu, log_var = self.model(data)
-                loss, loss_dict = vae_loss_function(
+                loss, loss_dict = vae_loss_function_corrected(
                     reconstructed, data, mu, log_var,
                     kl_weight=self.current_kl_weight
                 )

@@ -10,13 +10,6 @@ from config import config
 
 
 def load_single_csv(file_path: Path) -> pd.DataFrame:
-    """
-    Load a single CSV file with bridge accelerometer data.
-    Args:
-        file_path: Path to CSV file
-    Returns:
-        DataFrame with columns: day, hour_file, start_time, end_time, mean, variance, log_variance
-    """
     print(f"Loading: {file_path}")
     
     df = pd.read_csv(file_path)
@@ -32,7 +25,7 @@ def load_single_csv(file_path: Path) -> pd.DataFrame:
     expected_cols = config.COLUMNS
     if list(df.columns) != expected_cols:
         print(f"Warning: Column mismatch!")
-        print(f"Expected: {expected_cols}")
+        #print(f"Expected: {expected_cols}")
         #print(f"Got: {list(df.columns)}")
     
     print(f"Shape: {df.shape}")
