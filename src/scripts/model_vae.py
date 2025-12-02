@@ -251,26 +251,26 @@ def create_vae_model():
     total_params = sum(p.numel() for p in model.parameters())
     trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
     
-    print(f"\n📊 VAE Model Summary:")
-    print(f"   Architecture: LSTM Variational Autoencoder")
-    print(f"   Input dim: {config.N_FEATURES}")
-    print(f"   Encoder hidden dims: {config.ENCODER_HIDDEN_DIMS} (bidirectional={config.ENCODER_BIDIRECTIONAL})")
-    print(f"   Latent dim: {config.LATENT_DIM}")
-    print(f"   Decoder hidden dims: {config.DECODER_HIDDEN_DIMS}")
-    print(f"   Dropout: {config.DROPOUT}")
-    print(f"   Total parameters: {total_params:,}")
-    print(f"   Trainable parameters: {trainable_params:,}")
-    print(f"   Device: {config.DEVICE}")
-    print(f"   Compression ratio: {config.compression_ratio:.2f}x")
+    # print(f"\n📊 VAE Model Summary:")
+    # print(f"   Architecture: LSTM Variational Autoencoder")
+    # print(f"   Input dim: {config.N_FEATURES}")
+    # print(f"   Encoder hidden dims: {config.ENCODER_HIDDEN_DIMS} (bidirectional={config.ENCODER_BIDIRECTIONAL})")
+    # print(f"   Latent dim: {config.LATENT_DIM}")
+    # print(f"   Decoder hidden dims: {config.DECODER_HIDDEN_DIMS}")
+    # print(f"   Dropout: {config.DROPOUT}")
+    # print(f"   Total parameters: {total_params:,}")
+    # print(f"   Trainable parameters: {trainable_params:,}")
+    # print(f"   Device: {config.DEVICE}")
+    # print(f"   Compression ratio: {config.compression_ratio:.2f}x")
     
-    # Print detailed layer info
-    print(f"\n🔍 Decoder Layer Details:")
-    for i, hidden_dim in enumerate(config.DECODER_HIDDEN_DIMS):
-        if i == 0:
-            input_size = config.DECODER_HIDDEN_DIMS[0]
-        else:
-            input_size = config.DECODER_HIDDEN_DIMS[i-1]
-        print(f"   Layer {i}: LSTM(input_size={input_size}, hidden_size={hidden_dim})")
+    # # Print detailed layer info
+    # print(f"\n🔍 Decoder Layer Details:")
+    # for i, hidden_dim in enumerate(config.DECODER_HIDDEN_DIMS):
+    #     if i == 0:
+    #         input_size = config.DECODER_HIDDEN_DIMS[0]
+    #     else:
+    #         input_size = config.DECODER_HIDDEN_DIMS[i-1]
+    #     print(f"   Layer {i}: LSTM(input_size={input_size}, hidden_size={hidden_dim})")
     
     return model
 

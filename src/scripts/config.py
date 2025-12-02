@@ -52,7 +52,7 @@ class Config:
     ENCODER_BIDIRECTIONAL = True
     
     # Latent space
-    LATENT_DIM = 32  # Compression bottleneck
+    LATENT_DIM = 48  # Compression bottleneck
     
     # LSTM Decoder
     DECODER_HIDDEN_DIMS = [32, 64]
@@ -65,7 +65,7 @@ class Config:
     # ============================================
     # Basic training
     BATCH_SIZE = 256 # Can increase to 512 on A100
-    EPOCHS = 1000
+    EPOCHS = 1200
     LEARNING_RATE = 1e-3
     WEIGHT_DECAY = 1e-5
     
@@ -96,7 +96,7 @@ class Config:
     
     # Checkpointing
     SAVE_EVERY_N_EPOCHS = 50
-    PATIENCE = 15  # Early stopping patience
+    PATIENCE = 100  # Early stopping patience
     
     # Logging
     LOG_EVERY_N_STEPS = 50

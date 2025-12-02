@@ -152,7 +152,7 @@ def plot_latent_space(latents: np.ndarray, save_path: Path = None):
     
     # 2. Correlation heatmap (if latent_dim is small enough)
     ax2 = axes[1]
-    if latents.shape[1] <= 32:
+    if latents.shape[1] <= 64:
         import seaborn as sns
         corr = np.corrcoef(latents.T)
         sns.heatmap(corr, ax=ax2, cmap='coolwarm', center=0, square=True, 

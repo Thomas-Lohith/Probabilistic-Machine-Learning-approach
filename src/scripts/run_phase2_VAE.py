@@ -58,22 +58,8 @@ def parse_args():
 
 def train_phase2_vae(processed_file, output_dir, quick_test=False,
                      kl_weight=1.0, kl_annealing=False):
-    """
-    Train VAE model on Phase 2 multi-day data.
+   
     
-    Args:
-        processed_file: Path to processed data
-        output_dir: Output directory for checkpoints
-        quick_test: Whether to run quick test
-        kl_weight: KL divergence weight
-        kl_annealing: Whether to use KL annealing
-        
-    Returns:
-        Tuple of (model, history)
-    """
-    print("\n" + "="*80)
-    print("TRAINING VAE (PHASE 2)")
-    print("="*80)
     
     train, val, test = load_processed_data(processed_file)
     
@@ -240,7 +226,7 @@ def run_phase2_vae_pipeline(args):
         args: Command line arguments
     """
     print("\n" + "="*80)
-    print("PHASE 2: MULTI-DAY TRAINING (VAE)")
+    print("PHASE 2: MULTI-DAY (VAE)")
     print("="*80)
     print(f"Data directory: {args.data_dir}")
     print(f"Number of days: {args.n_days}")
@@ -255,7 +241,7 @@ def run_phase2_vae_pipeline(args):
     processed_dir.mkdir(parents=True, exist_ok=True)
     
     # ERROR FIXED: Define processed_file path before checking if it exists
-    processed_file = processed_dir / "phase2_combined_processed.npz"
+    processed_file = processed_dir / f"phase2_{args.n_days}days_processed.npz"
     
     # ============================================
     # STEP 1: Find CSV files
@@ -282,7 +268,7 @@ def run_phase2_vae_pipeline(args):
         print(f"\n♻️  Reusing existing processed data: {processed_file}")
     else:
         # Step 2.1: Load multi-day data
-        data_dict = load_multiple_days(file_list, args.skip_exploration)
+        data_dict = load_multiple_days(file_list, args.skip_exploration, args.output_dir)
         
         # Step 2.2: Preprocess (use function from run_phase2.py)
         processed_file = preprocess_multi_day(data_dict, output_dir)
@@ -292,6 +278,9 @@ def run_phase2_vae_pipeline(args):
     # ============================================
     # STEP 3: Train VAE
     # ============================================
+    print("\n" + "="*80)
+    print("STEP 3: MODEL TRAINING")
+    print("="*80)
     model, history = train_phase2_vae(
         processed_file,
         output_dir,
@@ -303,6 +292,10 @@ def run_phase2_vae_pipeline(args):
     # ============================================
     # STEP 4: Evaluate VAE
     # ============================================
+    print("\n" + "="*80)
+    print("STEP 4: EVALUATING MODEL")
+    print("="*80)
+
     checkpoint_path = output_dir / "checkpoints" / "vae_best_model.pt"
     
     if not checkpoint_path.exists():
@@ -318,8 +311,9 @@ def run_phase2_vae_pipeline(args):
     # ============================================
     # FINAL SUMMARY
     # ============================================
+
     print("\n" + "="*80)
-    print("PHASE 2 VAE PIPELINE COMPLETE! 🎉")
+    print("PHASE 2 RESULTS")
     print("="*80)
     
     print(f"\n📊 Results Summary:")
@@ -331,15 +325,15 @@ def run_phase2_vae_pipeline(args):
     print(f"   Reconstruction Loss: {metrics['recon_loss']:.6f}")
     
     print(f"\n💡 VAE Performance:")
-    kl = metrics['kl_divergence']
-    if kl < 1.0:
-        print(f"   ⚠️  KL very low ({kl:.3f}) - possible posterior collapse")
-    elif kl < 5.0:
-        print(f"   ✅ KL in good range ({kl:.3f}) - healthy latent space")
-    elif kl < 10.0:
-        print(f"   ⚠️  KL slightly high ({kl:.3f}) - may need tuning")
-    else:
-        print(f"   ❌ KL too high ({kl:.3f}) - model struggling")
+    # kl = metrics['kl_divergence']
+    # if kl < 1.0:
+    #     print(f"   ⚠️  KL very low ({kl:.3f}) - possible posterior collapse")
+    # elif kl < 5.0:
+    #     print(f"   ✅ KL in good range ({kl:.3f}) - healthy latent space")
+    # elif kl < 10.0:
+    #     print(f"   ⚠️  KL slightly high ({kl:.3f}) - may need tuning")
+    # else:
+    #     print(f"   ❌ KL too high ({kl:.3f}) - model struggling")
     
     print(f"\n📁 Output Directory: {output_dir}")
     print(f"   Processed data: {processed_dir}")
@@ -357,3 +351,5 @@ if __name__ == "__main__":
     # python3 run_phase2_VAE.py --n-days 100 --kl-weight 0.1 
     #python3 run_phase2_VAE.py --n-days 100 --kl-weight 0.9 --no-kl-annealing
     #python3 run_phase2_VAE.py --n-days 100 --kl-weight 1
+    #python3 run_phase2_VAE.py --n-days 100 --kl-weight 1 --output-dir /data/pool/c8x-98x/pml/src/phase2_VAE_results_sep_loss
+    #python3 run_phase2_VAE.py --n-days 99 --kl-weight 1 --output-dir /data/pool/c8x-98x/pml/src/phase2_VAE_results_sep_loss --reuse-processed

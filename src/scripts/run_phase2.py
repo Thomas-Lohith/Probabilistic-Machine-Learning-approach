@@ -72,14 +72,15 @@ def find_csv_files(data_dir: Path, n_days: int, start_date: str = None) -> list:
     # Select first n_days files
     selected_files = all_files[:n_days]
     
-    print(f"\n Selected {len(selected_files)} files for Phase 2:")
-    for i, f in enumerate(selected_files, 1):
-        print(f"   {i}. {f.name}")
+    #to Show file names inorder to check the dates 
+    # print(f"\n Selected {len(selected_files)} files for Phase 2:") 
+    # for i, f in enumerate(selected_files, 1):
+    #     print(f"   {i}. {f.name}")
     
     return selected_files
 
 
-def load_multiple_days(file_list: list, skip_exploration: bool = False) -> dict:
+def load_multiple_days(file_list: list,output_dir, skip_exploration: bool = False ) -> dict:
    
     print("\n" + "="*80)
     print("PHASE 2: LOADING MULTIPLE DAYS")
@@ -127,7 +128,7 @@ def load_multiple_days(file_list: list, skip_exploration: bool = False) -> dict:
             # Detailed exploration for first file only
             if i == 1 and not skip_exploration:
                 print(f"\n📊 Detailed statistics for first file:")
-                stats = explore_data(df, show_plots=False)
+                stats = explore_data(df,output_dir, show_plots= True)
 
             
                 
@@ -180,7 +181,7 @@ def preprocess_multi_day(data_dict: dict, output_dir: Path) -> Path:
 
     output_dir = output_dir / 'processed'
     
-    output_file = output_dir / f"phase2_{first_date}_to_{last_date}_{n_days}days_processed.npz"
+    output_file = output_dir / f"phase2_{n_days}days_processed.npz"
     
     print(f"\n📦 Processing {n_days} days of data...")
     print(f"   First day: {first_date}")
@@ -232,7 +233,7 @@ def preprocess_multi_day(data_dict: dict, output_dir: Path) -> Path:
     preprocessor.save_scaler(scaler_file)
     
     # Save day boundaries for later analysis
-    day_boundaries_file = output_dir / f"phase2_{first_date}_to_{last_date}_{n_days}days_boundaries.json"
+    day_boundaries_file = output_dir / f"phase2_{n_days}days_boundaries.json"
     with open(day_boundaries_file, 'w') as f:
         json.dump(data_dict['day_info'], f, indent=2)
     
@@ -419,7 +420,7 @@ def main():
             )
         
         # Step 2: Load multi-day data
-        data_dict = load_multiple_days(file_list, args.skip_exploration)
+        data_dict = load_multiple_days(file_list, args.skip_exploration, output_dir)
         
         # Step 3: Preprocess
         processed_file = output_dir / "processed_data.npz"

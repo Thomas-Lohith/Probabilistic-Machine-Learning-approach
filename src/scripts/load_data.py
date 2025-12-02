@@ -36,15 +36,7 @@ def load_single_csv(file_path: Path) -> pd.DataFrame:
     return df
 
 
-def explore_data(df: pd.DataFrame, show_plots: bool = True) -> dict:
-    """
-    Explore and analyze the loaded data.
-    Args:
-        df: DataFrame with accelerometer data
-        show_plots: Whether to display plots 
-    Returns:
-        Dictionary with statistics
-    """
+def explore_data(df: pd.DataFrame, output_dir, show_plots: bool = True, ) -> dict:
     stats = {}
     
     print("\n" + "="*60)
@@ -76,17 +68,6 @@ def explore_data(df: pd.DataFrame, show_plots: bool = True) -> dict:
     
     stats['feature_stats'] = feature_stats.to_dict()
     
-    # Check for infinite values
-    print(f"\n♾️  Infinite Values:")
-    for col in config.FEATURE_COLUMNS:
-        inf_count = np.isinf(df[col]).sum()
-        print(f"   {col:15s}: {inf_count}")
-    
-    # Time range
-    if 'start_time' in df.columns and 'end_time' in df.columns:
-        print(f"\n Time Range:")
-        print(f"   Start: {df['start_time'].iloc[0]}")
-        print(f"   End:   {df['end_time'].iloc[-1]}")
     
     # Sample data
     print(f"\n First 5 rows:")
@@ -101,12 +82,12 @@ def explore_data(df: pd.DataFrame, show_plots: bool = True) -> dict:
     
     # Visualization
     if show_plots:
-        plot_data_exploration(df)
+        plot_data_exploration(df, output_dir)
     
     return stats
 
 
-def plot_data_exploration(df: pd.DataFrame):
+def plot_data_exploration(df: pd.DataFrame, output_dir):
     """
     Create exploratory plots for the data.
     
@@ -150,8 +131,9 @@ def plot_data_exploration(df: pd.DataFrame):
     plt.tight_layout()
     
     #Save figure
-    output_dir =Path("/data/pool/c8x-98x/pml/src/scripts/results/figures")
-    #output_dir.mkdir(exist_ok= True)
+    output_dir =Path(output_dir)
+    output_dir = output_dir / 'data_explore'
+    output_dir.mkdir(exist_ok= True)
     output_path = output_dir / "data_exploration.png"
     plt.savefig(output_path, dpi=150, bbox_inches='tight')
     print(f"\n Saved exploration plot to: {output_path}")
@@ -243,19 +225,3 @@ if __name__ == "__main__":
     # Test with Phase 1 file
     test_file = Path("/data/pool/c8x-98x/bridge_data/100_days") / config.PHASE1_TEST_FILE
     
-    if test_file.exists():
-        print(f"Testing data loading with: {test_file}")
-        summary = get_data_summary(test_file)
-        #print(summary)
-        print("\n" + "="*60)
-        print(" DATA LOADING TEST COMPLETE")
-        print("="*60)
-    else:
-        print(f"Test file not found: {test_file}")
-        print(f"Available files in {test_file.parent}:")
-        if test_file.parent.exists():
-            csv_files = list(test_file.parent.glob("*.csv"))
-            for f in csv_files[:5]:  # Show first 5
-                print(f"   - {f.name}")
-        else:
-            print(f"   Directory does not exist!")
