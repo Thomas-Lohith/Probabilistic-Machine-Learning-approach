@@ -65,7 +65,7 @@ class Config:
     # ============================================
     # Basic training
     BATCH_SIZE = 256 # Can increase to 512 on A100
-    EPOCHS = 1200
+    EPOCHS = 2000
     LEARNING_RATE = 1e-3
     WEIGHT_DECAY = 1e-5
     
@@ -96,7 +96,7 @@ class Config:
     
     # Checkpointing
     SAVE_EVERY_N_EPOCHS = 50
-    PATIENCE = 100  # Early stopping patience
+    PATIENCE = 150  # Early stopping patience
     
     # Logging
     LOG_EVERY_N_STEPS = 50

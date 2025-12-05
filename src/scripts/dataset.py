@@ -108,7 +108,7 @@ def create_dataloaders(train: np.ndarray,
 
 def load_processed_data(processed_file: Path) -> Tuple[np.ndarray, np.ndarray, np.ndarray]: 
 
-    print(f"\n📂 Loading processed data from: {processed_file}")
+    print(f"\n Loading processed data from: {processed_file}")
     
     data = np.load(processed_file)
     

@@ -251,7 +251,7 @@ def create_vae_model():
     total_params = sum(p.numel() for p in model.parameters())
     trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
     
-    # print(f"\n📊 VAE Model Summary:")
+    # print(f"\n VAE Model Summary:")
     # print(f"   Architecture: LSTM Variational Autoencoder")
     # print(f"   Input dim: {config.N_FEATURES}")
     # print(f"   Encoder hidden dims: {config.ENCODER_HIDDEN_DIMS} (bidirectional={config.ENCODER_BIDIRECTIONAL})")
@@ -264,7 +264,7 @@ def create_vae_model():
     # print(f"   Compression ratio: {config.compression_ratio:.2f}x")
     
     # # Print detailed layer info
-    # print(f"\n🔍 Decoder Layer Details:")
+    # print(f"\n Decoder Layer Details:")
     # for i, hidden_dim in enumerate(config.DECODER_HIDDEN_DIMS):
     #     if i == 0:
     #         input_size = config.DECODER_HIDDEN_DIMS[0]

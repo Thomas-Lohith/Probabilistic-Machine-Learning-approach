@@ -133,7 +133,7 @@ def evaluate_phase2_vae(checkpoint_path, processed_file, output_dir, kl_weight=1
     print_vae_metrics(metrics)
     
     # Get reconstructions and latent representations for visualization
-    print(f"\n📊 Generating data for visualizations...")
+    print(f"\n******Generating data for visualizations...")
     model.eval()
     with torch.no_grad():
         # Get reconstructions, mu, and log_var
@@ -147,7 +147,7 @@ def evaluate_phase2_vae(checkpoint_path, processed_file, output_dir, kl_weight=1
         
         # Denormalize for visualization (if scaler available)
         if scaler is not None:
-            print(f"🔄 Denormalizing data for visualization...")
+            print(f"****** Denormalizing data for visualization...")
             
             original_shape = test_originals_norm.shape
             test_originals = scaler.inverse_transform(
@@ -163,7 +163,7 @@ def evaluate_phase2_vae(checkpoint_path, processed_file, output_dir, kl_weight=1
             # Calculate metrics on original scale
             mse_original = np.mean((test_originals - test_reconstructions) ** 2)
             mae_original = np.mean(np.abs(test_originals - test_reconstructions))
-            print(f"\n📊 Metrics on original scale:")
+            print(f"\n Metrics on original scale:")
             print(f"   MSE: {mse_original:.6f}")
             print(f"   MAE: {mae_original:.6f}")
         else:
@@ -171,7 +171,7 @@ def evaluate_phase2_vae(checkpoint_path, processed_file, output_dir, kl_weight=1
             test_reconstructions = test_reconstructions_norm
     
     # Create visualizations
-    print(f"\n📊 Creating visualizations...")
+    print(f"\n***** Creating visualizations...")
     
     results_dir = output_dir / "visualizations"
     results_dir.mkdir(parents=True, exist_ok=True)
@@ -185,7 +185,7 @@ def evaluate_phase2_vae(checkpoint_path, processed_file, output_dir, kl_weight=1
             save_path=results_dir / "vae_training_history.png"
         )
     else:
-        print(f"   ⚠️  Training history file not found: {history_file}")
+        print(f"  Training history file not found: {history_file}")
     
     # 2. Reconstruction samples
     print(f"   Creating reconstruction samples plot...")
@@ -213,18 +213,12 @@ def evaluate_phase2_vae(checkpoint_path, processed_file, output_dir, kl_weight=1
     with open(metrics_path, 'w') as f:
         json.dump(metrics, f, indent=2)
     
-    print(f"\n💾 Metrics saved: {metrics_path}")
+    print(f"\n Metrics saved: {metrics_path}")
     
     return metrics
 
 
 def run_phase2_vae_pipeline(args):
-    """
-    Run complete Phase 2 VAE pipeline.
-    
-    Args:
-        args: Command line arguments
-    """
     print("\n" + "="*80)
     print("PHASE 2: MULTI-DAY (VAE)")
     print("="*80)
@@ -247,7 +241,7 @@ def run_phase2_vae_pipeline(args):
     # STEP 1: Find CSV files
     # ============================================
     if args.file_list:
-        print(f"\n📁 Using provided file list ({len(args.file_list)} files)")
+        print(f"\n***Using provided file list ({len(args.file_list)} files)")
         file_list = [Path(f) for f in args.file_list]
     else:
         file_list = find_csv_files(
@@ -265,7 +259,7 @@ def run_phase2_vae_pipeline(args):
     
     # Check if we should reuse existing processed data
     if args.reuse_processed and processed_file.exists():
-        print(f"\n♻️  Reusing existing processed data: {processed_file}")
+        print(f"\n  Reusing existing processed data: {processed_file}")
     else:
         # Step 2.1: Load multi-day data
         data_dict = load_multiple_days(file_list, args.skip_exploration, args.output_dir)
@@ -273,7 +267,7 @@ def run_phase2_vae_pipeline(args):
         # Step 2.2: Preprocess (use function from run_phase2.py)
         processed_file = preprocess_multi_day(data_dict, output_dir)
     
-    print(f"✅ Processed data ready: {processed_file}")
+    print(f"*** Processed data ready: {processed_file}")
     
     # ============================================
     # STEP 3: Train VAE
@@ -316,7 +310,7 @@ def run_phase2_vae_pipeline(args):
     print("PHASE 2 RESULTS")
     print("="*80)
     
-    print(f"\n📊 Results Summary:")
+    print(f"\n######## Results Summary:######")
     print(f"   Days processed:     {args.n_days}")
     print(f"   R² Score:           {metrics['r2']:.4f}")
     print(f"   RMSE:               {metrics['rmse']:.6f}")
@@ -324,18 +318,8 @@ def run_phase2_vae_pipeline(args):
     print(f"   KL Divergence:      {metrics['kl_divergence']:.6f}")
     print(f"   Reconstruction Loss: {metrics['recon_loss']:.6f}")
     
-    print(f"\n💡 VAE Performance:")
-    # kl = metrics['kl_divergence']
-    # if kl < 1.0:
-    #     print(f"   ⚠️  KL very low ({kl:.3f}) - possible posterior collapse")
-    # elif kl < 5.0:
-    #     print(f"   ✅ KL in good range ({kl:.3f}) - healthy latent space")
-    # elif kl < 10.0:
-    #     print(f"   ⚠️  KL slightly high ({kl:.3f}) - may need tuning")
-    # else:
-    #     print(f"   ❌ KL too high ({kl:.3f}) - model struggling")
-    
-    print(f"\n📁 Output Directory: {output_dir}")
+    print(f"\n VAE Performance:")
+    print(f"\n Output Directory: {output_dir}")
     print(f"   Processed data: {processed_dir}")
     print(f"   Checkpoints:    {output_dir / 'checkpoints'}")
     print(f"   Visualizations: {output_dir / 'visualizations'}")

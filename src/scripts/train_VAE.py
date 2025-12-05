@@ -53,7 +53,7 @@ class ELBOLossTrainableSigma(nn.Module):
         }
         return total_loss, loss_dict
 
-# ===== COMPLETE VAE TRAINER WITH TRAINABLE SIGMA LOSS =====
+# =====  VAE TRAINER WITH TRAINABLE SIGMA LOSS =====
 class VAETrainer:
     """
     VAE Trainer with trainable sigma² ELBO loss and KL annealing.
@@ -99,7 +99,7 @@ class VAETrainer:
         
         # Scheduler & AMP
         self.scheduler = optim.lr_scheduler.ReduceLROnPlateau(
-            self.optimizer, mode='min', factor=0.5, patience=50
+            self.optimizer, mode='min', factor=0.5, patience=100
         )
         self.use_amp = use_amp
         self.scaler = GradScaler() if use_amp else None
@@ -215,7 +215,7 @@ class VAETrainer:
     
     def train(self, checkpoint_dir=None):
         print("\n" + "="*80)
-        print("🚀 STARTING VAE TRAINING WITH TRAINABLE σ² ELBO LOSS")
+        print("STARTING VAE TRAINING WITH TRAINABLE σ² ELBO LOSS")
         print("="*80)
         print(f"Initial σ²: {torch.exp(self.criterion.log_sigma2).item():.4f}")
         print(f"Epochs: {self.epochs}")
@@ -282,7 +282,7 @@ class VAETrainer:
                         'kl_weight': self.current_kl_weight,
                         'log_sigma2': self.criterion.log_sigma2.item()
                     }, best_path)
-                    print(f"  ✅ NEW BEST: {best_path}")
+                    print(f" $$$$ NEW BEST: {best_path}")
                 else:
                     self.epochs_without_improvement += 1
                 
@@ -296,10 +296,10 @@ class VAETrainer:
                         'val_loss': val_metrics['total_loss'],
                         'kl_weight': self.current_kl_weight
                     }, chk_path)
-                    print(f"  💾 Checkpoint: {chk_path}")
+                    print(f"   Checkpoint: {chk_path}")
                 
                 if self.epochs_without_improvement >= config.PATIENCE:
-                    print(f"\n⏹️  Early stopping (patience: {config.PATIENCE})")
+                    print(f"\n  Early stopping (patience: {config.PATIENCE})")
                     break
         
         total_time = time.time() - start_time
@@ -320,9 +320,9 @@ class VAETrainer:
             history_path = checkpoint_dir / "vae_training_history.json"
             with open(history_path, 'w') as f:
                 json.dump(self.history, f, indent=2)
-            print(f"\n✅ Saved: {final_path}, {history_path}")
+            print(f"\n Saved: {final_path}, {history_path}")
         
-        print(f"\n🎉 TRAINING COMPLETE! Total time: {total_time/3600:.1f}h")
+        print(f"\n TRAINING COMPLETE! Total time: {total_time/3600:.1f}h")
         print(f"Final σ²: {torch.exp(self.criterion.log_sigma2).item():.4f}")
         print("="*80)
         
