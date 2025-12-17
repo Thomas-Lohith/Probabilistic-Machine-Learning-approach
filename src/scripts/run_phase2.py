@@ -109,9 +109,9 @@ def load_multiple_days(file_list: list,output_dir, skip_exploration: bool = Fals
             if df.isna().any().any(): 
                 missing_percent = df.isna().mean().mean() * 100
                 missing = df.isna().any().any()
-                print('****There are missing data in this file and the percentage is:', missing_percent)
-                print(f'therfore skipping this file:', {csv_file})
-                continue
+                # print('****There are missing data in this file and the percentage is:', missing_percent)
+                # print(f'therfore skipping this file:', {csv_file})
+                # continue
             # Store info
             day_info.append({
                 'file': str(csv_file),
@@ -139,8 +139,7 @@ def load_multiple_days(file_list: list,output_dir, skip_exploration: bool = Fals
     # Combine all dataframes
     print(f"\n🔗 Combining {len(all_data)} days...")
     print("="*80)
-    print('missing list:', *missing_numbers, sep=', ')
-    
+    print('missing list:', list(map(float, missing_numbers))) 
     print('the missing percents of each day in the list:',)
     print(*missing_info, sep=', ')
     
@@ -183,7 +182,7 @@ def preprocess_multi_day(data_dict: dict, output_dir: Path) -> Path:
     
     output_file = output_dir / f"phase2_{n_days}days_processed.npz"
     
-    print(f"\n📦 Processing {n_days} days of data...")
+    print(f"\n Processing {n_days} days of data...")
     print(f"   First day: {first_date}")
     print(f"   Last day: {last_date}")
     print(f"   Output: {output_file}")
@@ -199,7 +198,7 @@ def preprocess_multi_day(data_dict: dict, output_dir: Path) -> Path:
     preprocessor = DataPreprocessor()
     
     # Handle missing values
-    #features = preprocessor.handle_missing_values(features, method='interpolate')
+    features = preprocessor.handle_missing_values(features, method='remove') #this interpolation technique can be addded into configuration
     
     # Normalize (fit on ALL multi-day data)
     features_normalized = preprocessor.normalize(features, fit=True)
@@ -396,7 +395,7 @@ def main():
     args = parse_args()
     
     print("="*80)
-    print("🚀 BRIDGE COMPRESSION - PHASE 2: MULTI-DAY TRAINING")
+    print(" BRIDGE COMPRESSION - PHASE 2: MULTI-DAY TRAINING")
     print("="*80)
     print(f"\nConfiguration:")
     print(f"  Data dir: {args.data_dir}")
@@ -448,9 +447,9 @@ def main():
         )
         
         print("\n" + "="*80)
-        print("✅ PHASE 2 COMPLETE!")
+        print(" PHASE 2 COMPLETE!")
         print("="*80)
-        print(f"\n📁 All results saved to: {output_dir}/")
+        print(f"\n All results saved to: {output_dir}/")
         print(f"\nNext steps:")
         print(f"  1. Check results in {output_dir}/results/")
         print(f"  2. Review metrics in overall_metrics.json")

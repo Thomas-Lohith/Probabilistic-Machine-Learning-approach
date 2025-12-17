@@ -20,7 +20,7 @@ class DataPreprocessor:
         self.scaler = StandardScaler()
         self.is_fitted = False
 
-    def handle_missing_values(self, features: np.ndarray, method: str = 'interpolate') -> np.ndarray:
+    def handle_missing_values(self, features: np.ndarray, method: str = 'remove') -> np.ndarray:
 
         print(f"\n Handling missing values (method: {method})...")
         
@@ -67,7 +67,7 @@ class DataPreprocessor:
     
     def normalize(self, features: np.ndarray, fit: bool = True) -> np.ndarray:
     
-        print(f"\n📏 Normalizing features (fit={fit})...")
+        print(f"\n Normalizing features (fit={fit})...")
         
         if fit:
             normalized = self.scaler.fit_transform(features)
@@ -92,15 +92,6 @@ class DataPreprocessor:
     def create_sequences(self, features: np.ndarray, 
                         sequence_length: int = None,
                         overlap: bool = False) -> np.ndarray:
-        """
-        Create sequences from continuous time series data.
-        Args:
-            features: Array of shape (n_samples, n_features)
-            sequence_length: Length of each sequence (default: config.SEQUENCE_LENGTH)
-            overlap: Whether sequences should overlap (default: False)        
-        Returns:
-            Array of shape (n_sequences, sequence_length, n_features)
-        """
         if sequence_length is None:
             sequence_length = config.SEQUENCE_LENGTH
         

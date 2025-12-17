@@ -1,6 +1,3 @@
-"""
-Evaluation script for LSTM Autoencoder
-"""
 
 import torch
 import numpy as np
@@ -33,7 +30,7 @@ def calculate_metrics(y_true: np.ndarray, y_pred: np.ndarray, use_abs: bool = Tr
     if use_abs:
         y_true = np.abs(y_true)
         #y_pred = np.abs(y_pred)
-        print(f"   📊 Applied abs() to ground truth for fair comparison")
+        print(f"    Applied abs() to ground truth for fair comparison")
     
     # Flatten arrays for sklearn metrics
     y_true_flat = y_true.reshape(-1)
@@ -131,7 +128,7 @@ def plot_reconstruction_samples(originals: np.ndarray,
     if save_path:
         save_path.parent.mkdir(parents=True, exist_ok=True)
         plt.savefig(save_path, dpi=150, bbox_inches='tight')
-        print(f"📊 Saved reconstruction plot to: {save_path}")
+        print(f" Saved reconstruction plot to: {save_path}")
     
     plt.close()
 
@@ -169,7 +166,7 @@ def plot_latent_space(latents: np.ndarray, save_path: Path = None):
     if save_path:
         save_path.parent.mkdir(parents=True, exist_ok=True)
         plt.savefig(save_path, dpi=150, bbox_inches='tight')
-        print(f"📊 Saved latent space plot to: {save_path}")
+        print(f" Saved latent space plot to: {save_path}")
     
     plt.close()
 
@@ -228,10 +225,10 @@ def plot_training_history(history_file: Path, save_path: Path = None):
     if save_path:
         #save_path.parent.mkdir(parents=True, exist_ok=True)
         plt.savefig(save_path, dpi=150, bbox_inches='tight')
-        print(f"📊 Saved training history plot to: {save_path}")
+        print(f" Saved training history plot to: {save_path}")
     
     # Print summary
-    print(f"\n📈 Training Summary:")
+    print(f"\n Training Summary:")
     print(f"   Total epochs: {len(epochs)}")
     print(f"   Best epoch: {best_epoch}")
     print(f"   Best val loss: {best_val_loss:.6f}")
@@ -247,32 +244,32 @@ def print_evaluation_report(metrics: Dict[str, float]):
     print("EVALUATION METRICS")
     print("="*60)
     
-    print(f"\n📊 Overall Metrics:")
+    print(f"\n Overall Metrics:")
     print(f"   MSE:  {metrics['mse']:.8f}")
     print(f"   RMSE: {metrics['rmse']:.8f}")
     print(f"   MAE:  {metrics['mae']:.8f}")
     print(f"   R²:   {metrics['r2']:.6f}")
     print(f"   Explained Variance: {metrics['explained_variance']:.6f}")
     
-    print(f"\n📈 Per-Feature R² Scores:")
+    print(f"\n### Per-Feature R² Scores:")
     for feature in config.FEATURE_COLUMNS:
         r2 = metrics[f'r2_{feature}']
         print(f"   {feature:15s}: {r2:.6f}")
     
-    print(f"\n📉 Per-Feature RMSE:")
+    print(f"\n### Per-Feature RMSE:")
     for feature in config.FEATURE_COLUMNS:
         rmse = metrics[f'rmse_{feature}']
         print(f"   {feature:15s}: {rmse:.8f}")
     
     # Quality assessment
     r2_score = metrics['r2']
-    print(f"\n🎯 Quality Assessment:")
+    print(f"\n Quality Assessment:")
     if r2_score >= config.MIN_R2_EXCELLENT:
-        print(f"   ⭐⭐⭐ EXCELLENT (R² >= {config.MIN_R2_EXCELLENT})")
+        print(f"   ### EXCELLENT (R² >= {config.MIN_R2_EXCELLENT})")
     elif r2_score >= config.MIN_R2_GOOD:
-        print(f"   ⭐⭐ GOOD (R² >= {config.MIN_R2_GOOD})")
+        print(f"   ## GOOD (R² >= {config.MIN_R2_GOOD})")
     elif r2_score >= config.MIN_R2_ACCEPTABLE:
-        print(f"   ⭐ ACCEPTABLE (R² >= {config.MIN_R2_ACCEPTABLE})")
+        print(f"   # ACCEPTABLE (R² >= {config.MIN_R2_ACCEPTABLE})")
     else:
         print(f"   ⚠️  NEEDS IMPROVEMENT (R² < {config.MIN_R2_ACCEPTABLE})")
     
@@ -300,17 +297,17 @@ def evaluate_phase1(checkpoint_path: Path,
     checkpoint = torch.load(checkpoint_path, map_location=config.DEVICE)
     model.load_state_dict(checkpoint['model_state_dict'])
     
-    print(f"\n✅ Loaded model from: {checkpoint_path}")
+    print(f"\n Loaded model from: {checkpoint_path}")
     print(f"   Training epoch: {checkpoint['epoch']}")
     print(f"   Validation loss: {checkpoint['val_loss']:.6f}")
     
     # Evaluate on test set
-    print(f"\n🔍 Evaluating on test set...")
+    print(f"\n Evaluating on test set...")
     test_originals, test_reconstructions, test_latents = evaluate_model(
         model, test_loader, config.DEVICE
     )
     
-    print(f"\n📊 Comparison Mode: Using absolute values")
+    print(f"\n Comparison Mode: Using absolute values")
     print(f"   Originals will be converted to abs() before comparison")
     print(f"   This matches the preprocessing in load_data.py")
     
@@ -321,7 +318,7 @@ def evaluate_phase1(checkpoint_path: Path,
     print_evaluation_report(test_metrics)
     
     # Create visualizations
-    print(f"\n📊 Creating visualizations...")
+    print(f"\n Creating visualizations...")
 
      # Training history (loss curves)
     history_file = checkpoint_path.parent / "history.json"
@@ -352,14 +349,14 @@ def evaluate_phase1(checkpoint_path: Path,
     metrics_file = output_dir / "metrics.json"
     with open(metrics_file, 'w') as f:
         json.dump(test_metrics, f, indent=2)
-    print(f"\n💾 Saved metrics to: {metrics_file}")
+    print(f"\n Saved metrics to: {metrics_file}")
     
     # Calculate compression statistics
     original_size = test_originals.nbytes
     compressed_size = test_latents.nbytes
     compression_ratio = original_size / compressed_size
     
-    print(f"\n💾 Storage Statistics:")
+    print(f"\n Storage Statistics:")
     print(f"   Original size: {original_size/1024/1024:.2f} MB")
     print(f"   Compressed size: {compressed_size/1024/1024:.2f} MB")
     print(f"   Compression ratio: {compression_ratio:.2f}x")
@@ -387,8 +384,8 @@ if __name__ == "__main__":
         
     else:
         if not checkpoint_path.exists():
-            print(f"❌ Checkpoint not found: {checkpoint_path}")
+            print(f" Checkpoint not found: {checkpoint_path}")
             print("Run train.py first!")
         if not processed_file.exists():
-            print(f"❌ Processed file not found: {processed_file}")
+            print(f" Processed file not found: {processed_file}")
             print("Run preprocess.py first!")

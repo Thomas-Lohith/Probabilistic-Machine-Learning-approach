@@ -17,20 +17,7 @@ class ELBOLossTrainableSigma(nn.Module):
         self.log_sigma2 = nn.Parameter(torch.tensor(0.0))  # trainable global log sigma^2
 
     def vae_loss_function(self, reconstructed, original, mu, log_var, kl_weight=1.0):
-        """
-        ELBO loss with Gaussian likelihood and trainable global sigma^2.
         
-        Args:
-            reconstructed: [B, T, C] decoder mean
-            original:      [B, T, C] ground truth data
-            mu:            [B, latent_dim] latent mean
-            log_var:       [B, latent_dim] latent log variance
-            kl_weight:     float, beta for KL term
-        
-        Returns:
-            total_loss: scalar tensor
-            loss_dict: dict with components for logging
-        """
         sigma2 = torch.exp(self.log_sigma2)  # scalar > 0
         
         # Gaussian NLL reconstruction: 0.5 * (MSE/σ² + log(σ²))
@@ -285,8 +272,9 @@ class VAETrainer:
                     print(f" $$$$ NEW BEST: {best_path}")
                 else:
                     self.epochs_without_improvement += 1
+                    print(f"  No improvement for {self.epochs_without_improvement} epochs")
                 
-                if (epoch + 1) % 20 == 0:
+                if (epoch + 1) % 50 == 0:
                     chk_path = checkpoint_dir / f"vae_epoch_{epoch+1}.pt"
                     torch.save({
                         'epoch': epoch,
@@ -299,7 +287,7 @@ class VAETrainer:
                     print(f"   Checkpoint: {chk_path}")
                 
                 if self.epochs_without_improvement >= config.PATIENCE:
-                    print(f"\n  Early stopping (patience: {config.PATIENCE})")
+                    print(f"\n  Early stopping after {epoch+1} epochs(patience: {config.PATIENCE})")
                     break
         
         total_time = time.time() - start_time
