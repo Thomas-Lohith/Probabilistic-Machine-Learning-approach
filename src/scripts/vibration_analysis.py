@@ -216,19 +216,9 @@ def visualize_single_sensor(
     output_path: Optional[str] = None,
     figsize: Tuple[int, int] = (12, 6)
 ) -> None:
-    """
-    Visualize a single sensor's time-series data.
-    
-    Args:
-        df: DataFrame with time and sensor columns
-        sensor_id: Sensor column name to plot
-        time_column: Name of time column
-        backend: 'matplotlib' or 'plotly'
-        output_path: Path to save figure (if None, no save)
-        figsize: Figure size for matplotlib
-    """
-    if sensor_id not in df.columns:
-        raise ValueError(f"Sensor '{sensor_id}' not found in data")
+   
+    # if sensor_id not in df.columns:
+    #     raise ValueError(f"Sensor '{sensor_id}' not found in data")
     
     logger.info(f"Visualizing single sensor: {sensor_id} [{backend}]")
     
@@ -243,7 +233,7 @@ def visualize_single_sensor(
         fig.tight_layout()
         
         if output_path:
-            #fig.savefig(output_path, dpi=CONFIG['DPI'])
+            fig.savefig(output_path, dpi=CONFIG['DPI'])
             logger.info(f"Saved to: {output_path}")
         plt.show()
         
@@ -368,20 +358,8 @@ def visualize_sensors(
     output_path: Optional[str] = None,
     cols: int = None
 ) -> None:
-    """
-    Unified visualization function for single or multiple sensors.
-    Automatically routes to appropriate visualization function.
-    
-    Args:
-        df: DataFrame with time and sensor columns
-        sensor_ids: Single sensor ID (str) or list of sensor IDs
-        time_column: Name of time column
-        backend: 'matplotlib' or 'plotly'
-        output_path: Path to save figure
-        cols: Number of subplot columns (for multiple sensors)
-    """
     # Convert single sensor to list for consistent handling
-    if isinstance(sensor_ids, str):
+    if len(sensor_ids) ==1 :
         visualize_single_sensor(df, sensor_ids, time_column, backend, output_path)
     else:
         visualize_multiple_sensors(df, sensor_ids, time_column, backend, output_path, cols)
@@ -506,10 +484,7 @@ Examples:
   
   # Multiple sensors
   python3 script.py --path data.csv --start_time "2025/03/07 01:05:00" --duration_mins 5 --sensor "030911FF_x,03091017_z,03091113_x"
-  
-  # All available sensors
-  python3 script.py --path data.csv --start_time "2025/03/07 01:05:00" --duration_mins 5
-        """
+  """
     )
     
     parser.add_argument(
@@ -650,3 +625,6 @@ Examples:
 
 if __name__ == "__main__":
     exit(main())
+
+#ex: python3 vibration\ _analysis.py --path /data/pool/c8x-98x/bridge_data/20241221/csv_acc/M001_2024-12-21_00-00-00_gg-34_int-1_th.csv --start_time "2024/12/21 00:16:40" --duration_mins 5 --sensor 030911EF_x,030911FF_x --output_dir graphs
+#ex: python3 vibration\ _analysis.py --path /data/pool/c8x-98x/bridge_data/20241221/csv_acc/M001_2024-12-21_00-00-00_gg-34_int-1_th.csv --start_time "2024/12/21 00:16:40" --duration_mins 5 --sensor 030911EF_x --output_dir graphs

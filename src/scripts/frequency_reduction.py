@@ -85,3 +85,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+#ex: python3 frequency_reduction.py --root_dir /data/pool/c8 --sensor_channel --chunk_size 50 --output

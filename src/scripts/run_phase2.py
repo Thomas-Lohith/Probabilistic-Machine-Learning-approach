@@ -21,9 +21,7 @@ def parse_args():
     """Parse command line arguments."""
     parser = argparse.ArgumentParser(description='Phase 2: Multi-Day Training')
     
-    parser.add_argument('--data-dir', type=str, 
-                        default='/data/pool/c8x-98x/bridge_data/100_days',
-                        help='Directory containing CSV files')
+    parser.add_argument('--data-dir', type=str, default='/data/pool/c8x-98x/bridge_data/100_days', help='Directory containing CSV files')
     
     parser.add_argument('--n-days', type=int, default=5,
                         help='Number of days to process (default: 5)')
@@ -62,7 +60,7 @@ def find_csv_files(data_dir: Path, n_days: int, start_date: str = None) -> list:
     if len(all_files) == 0:
         raise FileNotFoundError(f"No CSV files found in {data_dir}")
     
-    print(f"\n📁 Found {len(all_files)} CSV files in {data_dir}")
+    print(f"\n Found {len(all_files)} CSV files in {data_dir}")
     
     # Filter by start date if provided
     if start_date:
@@ -92,7 +90,7 @@ def load_multiple_days(file_list: list,output_dir, skip_exploration: bool = Fals
     missing_numbers = []
     
     for i, csv_file in enumerate(file_list, 1):
-        print(f"\n📂 Loading Day {i}/{len(file_list)}: {csv_file.name}")
+        print(f"\n Loading Day {i}/{len(file_list)}: {csv_file.name}")
         
         try:
             # Load CSV
@@ -127,7 +125,7 @@ def load_multiple_days(file_list: list,output_dir, skip_exploration: bool = Fals
             
             # Detailed exploration for first file only
             if i == 1 and not skip_exploration:
-                print(f"\n📊 Detailed statistics for first file:")
+                print(f"\n Detailed statistics for first file:")
                 stats = explore_data(df,output_dir, show_plots= True)
 
             
@@ -137,7 +135,7 @@ def load_multiple_days(file_list: list,output_dir, skip_exploration: bool = Fals
             raise
     
     # Combine all dataframes
-    print(f"\n🔗 Combining {len(all_data)} days...")
+    print(f"\n Combining {len(all_data)} days...")
     print("="*80)
     print('missing list:', list(map(float, missing_numbers))) 
     print('the missing percents of each day in the list:',)
