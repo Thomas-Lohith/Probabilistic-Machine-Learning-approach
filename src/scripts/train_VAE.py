@@ -274,7 +274,7 @@ class VAETrainer:
                     self.epochs_without_improvement += 1
                     print(f"  No improvement for {self.epochs_without_improvement} epochs")
                 
-                if (epoch + 1) % 50 == 0:
+                if (epoch + 1) % 100 == 0:
                     chk_path = checkpoint_dir / f"vae_epoch_{epoch+1}.pt"
                     torch.save({
                         'epoch': epoch,

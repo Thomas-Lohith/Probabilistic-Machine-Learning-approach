@@ -6,13 +6,17 @@ __pycache__/
 # C extensions
 *.so
 
-# ignore some folders
+# ignore some folders only this beacuse of the space constraint 
 src/phase2_results
 src/phase2_VAE_results
 src/scripts/__pycache__
 src/models/checkpoints
 src/phase2_VAE_results_sep_loss/checkpoints
 src/phase2_VAE_results_sep_loss/processed
+results/5hz/checkpoints
+results/5hz/processed
+#src/results/vae_metrics.json
+
 
 # Distribution / packaging
 .Python

@@ -96,7 +96,7 @@ class Config:
     
     # Checkpointing
     SAVE_EVERY_N_EPOCHS = 50
-    PATIENCE = 100  # Early stopping patience
+    PATIENCE = 200  # Early stopping patience
     
     # Logging
     LOG_EVERY_N_STEPS = 50

@@ -25,8 +25,7 @@ def parse_args():
                         default='/data/pool/c8x-98x/bridge_data/100_days',
                         help='Directory containing CSV files')
     
-    parser.add_argument('--n-days', type=int, default=5,
-                        help='Number of days to process (default: 5)')
+    parser.add_argument('--n-days', type=int, help='Number of days to process (default: 5)')
     
     parser.add_argument('--start-date', type=str, default=None,
                         help='Start date (YYYYMMDD format), e.g., 20241126')
@@ -59,8 +58,6 @@ def parse_args():
 def train_phase2_vae(processed_file, output_dir, quick_test=False,
                      kl_weight=1.0, kl_annealing=False):
    
-    
-    
     train, val, test = load_processed_data(processed_file)
     
     # Create data loaders
@@ -331,9 +328,13 @@ def run_phase2_vae_pipeline(args):
 if __name__ == "__main__":
     args = parse_args()
     run_phase2_vae_pipeline(args)
-    #last experiment; 
+
+    
+    #last experiments -----log; 
     # python3 run_phase2_VAE.py --n-days 100 --kl-weight 0.1 
     #python3 run_phase2_VAE.py --n-days 100 --kl-weight 0.9 --no-kl-annealing
     #python3 run_phase2_VAE.py --n-days 100 --kl-weight 1
     #python3 run_phase2_VAE.py --n-days 100 --kl-weight 1 --output-dir /data/pool/c8x-98x/pml/src/phase2_VAE_results_sep_loss
     #python3 run_phase2_VAE.py --n-days 99 --kl-weight 1 --output-dir /data/pool/c8x-98x/pml/src/phase2_VAE_results_sep_loss --reuse-processed
+
+    #python3 run_phase2_VAE.py --n-days 100 --data-dir /data/pool/c8x-98x/5hz/ --output-dir /data/pool/c8x-98x/pml/results/
