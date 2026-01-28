@@ -404,14 +404,17 @@ def anomaly_mode(args):
     # Compute per-sequence errors
     mse_per_seq = np.mean((sequences - reconstructed) ** 2, axis=(1, 2))
     mae_per_seq = np.mean(np.abs(sequences - reconstructed), axis=(1, 2))
+
+    print('the mse per seq is:', mse_per_seq)
     
     # Determine threshold
     if args.threshold == 'auto':
-        threshold = np.percentile(mse_per_seq, 95)
-        print(f"\n Auto threshold (95th percentile): {threshold:.6f}")
+        threshold = np.percentile(mae_per_seq, 90)
+        print(f"\n Auto threshold (90th percentile): {threshold:.6f}")
     else:
         threshold = float(args.threshold)
         print(f"\n Manual threshold: {threshold}")
+
     
     # Find anomalies
     anomalies = mse_per_seq > threshold
@@ -522,7 +525,7 @@ def visualize_roundtrip(original, reconstructed, latent, output_dir, scaler):
         recon = reconstructed
     
     # 1. Reconstruction comparison
-    n_samples = min(3, len(orig))
+    n_samples = min(5, len(orig))
     fig, axes = plt.subplots(n_samples, 2, figsize=(12, 3*n_samples))
     if n_samples == 1:
         axes = axes.reshape(1, -1)
@@ -636,7 +639,7 @@ Examples:
     # Common args
     common = argparse.ArgumentParser(add_help=False)
     common.add_argument('--checkpoint', type=str,
-                       default='phase2_VAE_results/checkpoints/vae_best_model.pt',
+                       default='phase2_VAE_results_sep_loss/checkpoints/vae_best_model.pt',
                        help='Checkpoint path')
     common.add_argument('--output', type=str, required=True, help='Output directory')
     common.add_argument('--no-scaler', action='store_true', help='Skip scaler')
